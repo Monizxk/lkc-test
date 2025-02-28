@@ -2,6 +2,7 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router'
 
+const boards = ref([]);
 const router = useRouter()
 const folders = ref([]);
 
@@ -45,14 +46,29 @@ const availableIcons = [
 ];
 
 const createFolder = () => {
+  // Создаем новую папку
+  const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
   const newFolder = {
-    id: folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1,
+    id: newFolderId,
     name: `Папка ${folders.value.length + 1}`.substring(0, 50),
-    description: "Нова папка".substring(0, 240),
+    description: "Новая папка".substring(0, 240),
     icon: "mdi-folder",
-    path: "/new-folder",
+    path: `/board/${newFolderId}`, // Прямой путь к доске
+    boardId: newFolderId // Используем тот же ID для доски для простоты
   };
+
+  // Создаем пустую доску с таким же ID
+  const board = {
+    id: newFolderId,
+    name: `Доска ${newFolderId}`,
+  };
+
+  // Добавляем папку в массив папок
   folders.value.push(newFolder);
+
+  // Здесь можно сохранить информацию о доске, если необходимо
+
+  // Открываем диалог редактирования (если нужно)
   editingFolder.value = newFolder;
   editedName.value = newFolder.name;
   editedDescription.value = newFolder.description;
@@ -99,11 +115,6 @@ const deleteFolder = () => {
   }
 };
 
-const handleFolderClick = (event, folder) => {
-  if (editingFolder.value === folder) {
-    event.preventDefault();
-  }
-};
 const menuItems = ref([
   { title: 'Account settings', action: 'settings' },
   { title: 'Log out', action: 'logout' }
@@ -210,7 +221,6 @@ const goToHelp = () => router.push('/help')
           <router-link
               :to="folder.path"
               class="folder"
-              @click="(e) => handleFolderClick(e, folder)"
           >
             <div class="folder-content">
               <v-icon size="40">{{ folder.icon }}</v-icon>

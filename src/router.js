@@ -5,6 +5,7 @@ import SignUp from "@/components/SignUp.vue";
 import Register from "@/components/Register.vue";
 import FileDiractory from "@/components/FileDiractory.vue";
 import Help from "@/components/Help.vue"
+import CanvasBoard from "@/components/CanvasBoard.vue";
 
 const routes = [
     { path: '/menu', component: MainMenu },
@@ -13,6 +14,12 @@ const routes = [
     { path: '/register', component: Register },
     { path: '/files', component: FileDiractory },
     { path: '/help', component: Help },
+    {
+        path: '/board/:boardId',
+        name: 'board',
+        component: CanvasBoard,
+        props: true
+    }
 ]
 
 const router = createRouter({
