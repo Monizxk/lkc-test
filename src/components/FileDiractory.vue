@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router'
+import {getBoard, insertBoard} from "@/utils/boardStotage.js";
 
 const boards = ref([]);
 const router = useRouter()
@@ -48,6 +49,7 @@ const availableIcons = [
 const createFolder = () => {
   // Создаем новую папку
   const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
+
   const newFolder = {
     id: newFolderId,
     name: `Папка ${folders.value.length + 1}`.substring(0, 50),
@@ -56,6 +58,12 @@ const createFolder = () => {
     path: `/board/${newFolderId}`, // Прямой путь к доске
     boardId: newFolderId // Используем тот же ID для доски для простоты
   };
+
+  insertBoard(newFolder.id, {
+    id: newFolder.id,
+    name: newFolder.name,
+    board: null
+  }).then()
 
   // Создаем пустую доску с таким же ID
   const board = {
@@ -92,6 +100,13 @@ const saveEdits = () => {
       folder.description = editedDescription.value.trim();
       folder.icon = editedIcon.value;
     }
+
+    getBoard(editingFolder.value.id).then(board => {
+      board.name = folder.name;
+
+      insertBoard(board.id, board).then()
+    })
+
     editingFolder.value = null;
     showEditDialog.value = false;
   }

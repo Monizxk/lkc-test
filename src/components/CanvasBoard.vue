@@ -58,12 +58,12 @@
           <v-text :config="textConfig"></v-text>
 
           <!-- Добавленный круг -->
-<!--          <v-circle-->
-<!--              :config="circleConfig"-->
-<!--              @dragstart="handleDragStart"-->
-<!--              @dragend="handleDragEnd"-->
-<!--              @dragmove="handleDragMove"-->
-<!--          />-->
+          <v-circle
+              :config="circleConfig"
+              @dragstart="handleDragStart"
+              @dragend="handleDragEnd"
+              @dragmove="handleDragMove"
+          />
         </v-layer>
       </v-stage>
     </div>
@@ -74,6 +74,7 @@ import {ref, computed, onMounted, onUnmounted, watch} from "vue";
 import { useRoute, useRouter } from 'vue-router';
 import {useFoldersBoardsStore} from "@/stores/useBoardStore.js";
 import ToolMenu from "@/components/ToolMenu.vue";
+import {getBoard} from "@/utils/boardStotage.js";
 
 const route = useRoute();
 const router = useRouter();
@@ -115,7 +116,15 @@ const handleResize = () => {
   textConfig.value.y = stageConfig.value.height / 2;
 };
 
-onMounted(() => {
+const onStartup = async () => {
+  const board = await getBoard(boardId.value)
+  boardName.value = board.name;
+
+  console.log(board)
+}
+
+onMounted(async () => {
+  await onStartup()
   window.addEventListener('resize', handleResize);
 });
 
@@ -146,40 +155,44 @@ const textConfig = ref({
 });
 
 // // Конфигурация для круга
-// const circleConfig = ref({
-//   x: 100,
-//   y: 100,
-//   radius: 70,
-//   fill: "#FF5722",
-//   stroke: "#E64A19",
-//   strokeWidth: 2,
-//   draggable: true, // Возможность перетаскивания
-//   shadowColor: "black",
-//   shadowBlur: 5,
-//   shadowOffset: { x: 2, y: 2 },
-//   shadowOpacity: 0.3
-// });
-//
-// const dragItemId = ref(null);
-//
-// // Обработчики для перетаскивания круга
-// const handleDragStart = (e) => {
-//   dragItemId.value = e.target.id();
-//   console.log("Drag started:", dragItemId.value);
-// };
-//
-// const handleDragEnd = (e) => {
-//   console.log("Drag ended:", e.target.x(), e.target.y());
-//   dragItemId.value = null;
-// };
-//
-// const handleDragMove = (e) => {
-//   console.log("Drag move:", e.target.x(), e.target.y());
-// };
+const circleConfig = ref({
+  x: 100,
+  y: 100,
+  radius: 70,
+  fill: "#FF5722",
+  stroke: "#E64A19",
+  strokeWidth: 2,
+  draggable: true, // Возможность перетаскивания
+  shadowColor: "black",
+  shadowBlur: 5,
+  shadowOffset: { x: 2, y: 2 },
+  shadowOpacity: 0.3
+});
+
+const dragItemId = ref(null);
+
+
+  const handleDragStart = (e) => {
+    dragItemId.value = e.target.id();
+    console.log("Drag started:", dragItemId.value);
+  };
+
+  const handleDragEnd = (e) => {
+    console.log("Drag ended:", e.target.x(), e.target.y());
+    dragItemId.value = null;
+  };
+
+  const handleDragMove = (e) => {
+    console.log("Drag move:", e.target.x(), e.target.y());
+  };
 
 const goBack = () => {
   router.push('/files');
 };
+
+const serializeBoard = (boardId) => {
+
+}
 </script>
 
 <style scoped>

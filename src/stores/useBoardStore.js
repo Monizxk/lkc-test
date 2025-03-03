@@ -11,6 +11,8 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
     const editedIcon = ref('');
     const showEditDialog = ref(false);
 
+    console.log(694870894733987341325404790834958)
+
     // получить папку по ID
     const getFolderById = computed(() => {
         return (id) => folders.value.find(folder => folder.id === id);
@@ -29,6 +31,7 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
         // Создание новой папки
         const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
         const folderName = `Папка ${folders.value.length + 1}`.substring(0, 50);
+
 
         const newFolder = {
             id: newFolderId,
@@ -50,6 +53,7 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
             },
             objects: [] // Пустой массив для объектов доски
         };
+
 
         // Связываем папку с доской
         newFolder.boardId = newBoardId;
