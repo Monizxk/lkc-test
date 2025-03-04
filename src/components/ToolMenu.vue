@@ -1,27 +1,26 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted } from "vue";
+import {useDrawingStore} from "@/stores/useBoardStore.js";
 
-// Существующий код...
+const store = useDrawingStore();
 
 // Инструменты для боковой панели
 const tools = ref([
-  { title: 'Draw', value: 'select', icon: 'mdi-draw' },
-  { title: 'Eraser', value: 'rectangle', icon: 'mdi-eraser' },
-  { title: 'Eyedropper', value: 'circle', icon: 'mdi-eyedropper' },
+  { title: 'Draw', value: 'pen', icon: 'mdi-draw' },
+  { title: 'Eraser', value: 'eraser', icon: 'mdi-eraser' },
+  { title: 'Eyedropper', value: 'eyedropper', icon: 'mdi-eyedropper' },
   { title: 'Add Text', value: 'text', icon: 'mdi-format-text' },
   { title: 'Image', value: 'image', icon: 'mdi-image-outline' },
-  { title: 'Crop Image', value: 'line', icon: 'mdi-crop' },
-  { title: 'Note', value: 'line', icon: 'mdi-note-outline' },
-
+  { title: 'Crop Image', value: 'crop', icon: 'mdi-crop' },
+  { title: 'Note', value: 'note', icon: 'mdi-note-outline' },
 ]);
 
-// Текущий выбранный инструмент
-const currentTool = ref('select');
+// Получаем текущий инструмент из store
+const currentTool = computed(() => store.currentTool);
 
 // Функция выбора инструмента
 const selectTool = (tool) => {
-  currentTool.value = tool;
-  // Тут можно добавить логику для создания соответствующих фигур на канвасе
+  store.setTool(tool);
   console.log('Выбран инструмент:', tool);
 };
 </script>

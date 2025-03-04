@@ -11,8 +11,6 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
     const editedIcon = ref('');
     const showEditDialog = ref(false);
 
-    console.log(694870894733987341325404790834958)
-
     // получить папку по ID
     const getFolderById = computed(() => {
         return (id) => folders.value.find(folder => folder.id === id);
@@ -86,14 +84,6 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
                         boards.value[boardIndex] = { ...boards.value[boardIndex], name: name };
                     }
                 }
-
-                // // Способ 2: Обновление по boardId (если они связаны напрямую)
-                // if (boardId) {
-                //     const boardIndex = boards.value.findIndex(b => b.id === boardId);
-                //     if (boardIndex !== -1 && boards.value[boardIndex].name !== name) {
-                //         boards.value[boardIndex] = { ...boards.value[boardIndex], name: name };
-                //     }
-                // }
             });
         },
         { deep: true }
@@ -196,3 +186,18 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
         confirmDelete
     };
 });
+export const useDrawingStore = defineStore("drawing", () => {
+    const isDrawingMode = ref(false);
+    const currentTool = ref("select"); // Инициализируем значение для currentTool
+
+    const toggleDrawing = () => {
+        isDrawingMode.value = !isDrawingMode.value;
+    };
+
+    const setTool = (tool) => {
+        currentTool.value = tool;
+    };
+
+    return { isDrawingMode, toggleDrawing, currentTool, setTool };
+});
+1

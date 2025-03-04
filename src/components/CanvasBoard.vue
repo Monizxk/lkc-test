@@ -51,18 +51,30 @@
     <ToolMenu/>
 
     <div class="konva-container">
-      <v-stage :config="stageConfig" ref="stageRef">
+      <v-stage
+          :config="stageConfig"
+          ref="stageRef"
+          @mousedown="startDrawing"
+          @mousemove="draw"
+          @mouseup="stopDrawing"
+          @mouseleave="stopDrawing"
+      >
         <v-layer>
-          <!-- Пустая доска с цветным фоном -->
+          <!-- Background with colored background -->
           <v-rect :config="backgroundConfig"></v-rect>
           <v-text :config="textConfig"></v-text>
 
-          <!-- Добавленный круг -->
-          <v-circle
-              :config="circleConfig"
-              @dragstart="handleDragStart"
-              @dragend="handleDragEnd"
-              @dragmove="handleDragMove"
+          <!-- Lines for drawing -->
+          <v-line
+              v-for="(line, index) in lines"
+              :key="index"
+              :config="{
+        points: line.points,
+        stroke: 'black',
+        strokeWidth: 3,
+        lineCap: 'round',
+        lineJoin: 'round',
+      }"
           />
         </v-layer>
       </v-stage>
@@ -75,11 +87,18 @@ import { useRoute, useRouter } from 'vue-router';
 import {useFoldersBoardsStore} from "@/stores/useBoardStore.js";
 import ToolMenu from "@/components/ToolMenu.vue";
 import {getBoard} from "@/utils/boardStotage.js";
+import { useDrawingStore } from "@/stores/useBoardStore.js";
+
 
 const route = useRoute();
+const lines = ref([]);
 const router = useRouter();
 const foldersBoardsStore = useFoldersBoardsStore();
 const stageRef = ref(null);
+const isDrawing = ref(false);
+const eraserSize = ref(1);
+const store = useDrawingStore();
+
 
 // Получаем ID доски из URL
 const boardId = computed(() => parseInt(route.params.boardId));
@@ -132,42 +151,6 @@ onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-// Конфигурация для фона доски
-const backgroundConfig = ref({
-  x: 0,
-  y: 0,
-  width: stageConfig.value.width,
-  height: stageConfig.value.height,
-  fill: "#e3f2fd", // Светло-синий фон
-});
-
-// Конфигурация для текста
-const textConfig = ref({
-  x: stageConfig.value.width / 2,
-  y: stageConfig.value.height / 2,
-  text: "help",
-  fontSize: 24,
-  fontFamily: "Arial",
-  fill: "#1976d2",
-  align: "center",
-  width: 300,
-  offsetX: 150 // центрирование текста
-});
-
-// // Конфигурация для круга
-const circleConfig = ref({
-  x: 100,
-  y: 100,
-  radius: 70,
-  fill: "#FF5722",
-  stroke: "#E64A19",
-  strokeWidth: 2,
-  draggable: true, // Возможность перетаскивания
-  shadowColor: "black",
-  shadowBlur: 5,
-  shadowOffset: { x: 2, y: 2 },
-  shadowOpacity: 0.3
-});
 
 const dragItemId = ref(null);
 
@@ -191,27 +174,71 @@ const goBack = () => {
 };
 
 const serializeBoard = (boardId) => {
-
 }
+
+const startDrawing = (e) => {
+  isDrawing.value = true;
+  const pos = e.target.getStage().getPointerPosition();
+  lines.value.push({ points: [pos.x, pos.y] });
+};
+
+const draw = (e) => {
+  // Only draw if the mouse is pressed down
+  if (!isDrawing.value) return;
+
+  const stage = e.target.getStage();
+  const point = stage.getPointerPosition();
+
+  // Add new point to the last line
+  const lastLine = lines.value[lines.value.length - 1];
+  // Create a new array with the updated points to ensure reactivity
+  const newPoints = [...lastLine.points, point.x, point.y];
+
+  // Update the points in a reactive way
+  lines.value[lines.value.length - 1] = {
+    ...lastLine,
+    points: newPoints
+  };
+
+  // Проверка, если выбран инструмент "ластик"
+  if (store.currentTool === 'eraser') {
+    // Простая логика стирания
+    eraseAtPosition(point);
+  }
+};
+
+const eraseAtPosition = (pos) => {
+  // Упрощенная версия: просто удаляем линии, которые находятся рядом с позицией ластика
+  const eraserRadius = eraserSize.value;
+
+  // Фильтруем линии, которые не должны быть стерты
+  lines.value = lines.value.filter(line => {
+    // Проверяем каждую точку линии
+    for (let i = 0; i < line.points.length; i += 2) {
+      const x = line.points[i];
+      const y = line.points[i + 1];
+
+      // Рассчитываем расстояние от точки до позиции ластика
+      const dx = x - pos.x;
+      const dy = y - pos.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      // Если точка находится в радиусе ластика, удаляем линию
+      if (distance <= eraserRadius) {
+        return false;
+      }
+    }
+    return true;
+  });
+};
+
+const stopDrawing = () => {
+  isDrawing.value = false;
+};
+
 </script>
 
 <style scoped>
-.board-page {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.board-header {
-  height: 64px;
-  background-color: #1976d2;
-  color: white;
-  display: flex;
-  align-items: center;
-  padding: 0 16px;
-}
 
 .board-header h2 {
   margin-left: 16px;
