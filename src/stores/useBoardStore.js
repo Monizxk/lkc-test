@@ -11,22 +11,17 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
     const editedIcon = ref('');
     const showEditDialog = ref(false);
 
-    // получить папку по ID
     const getFolderById = computed(() => {
         return (id) => folders.value.find(folder => folder.id === id);
     });
 
-    // получить доску по ID
     const getBoardById = (id) => boards.value.find(board => board.id === id);
 
-    // Получить доску, связанную с папкой
     const getBoardByFolderId = computed(() => {
         return (folderId) => boards.value.find(board => board.folderId === folderId);
     });
 
-    // створить новую папку і доску
     const createFolder = () => {
-        // Создание новой папки
         const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
         const folderName = `Папка ${folders.value.length + 1}`.substring(0, 50);
 
@@ -44,23 +39,20 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
         const newBoard = {
             id: newBoardId,
             folderId: newFolderId,
-            name: folderName, // используем то же название, что и у папки
+            name: folderName,
             konvaConfig: {
                 width: 800,
                 height: 600,
             },
-            objects: [] // Пустой массив для объектов доски
+            objects: []
         };
 
 
-        // Связываем папку с доской
         newFolder.boardId = newBoardId;
 
-        // Добавляем папку и доску в соответствующие массивы
         folders.value.push(newFolder);
         boards.value.push(newBoard);
 
-        // Устанавливаем редактируемую папку
         editingFolder.value = newFolder;
         editedName.value = newFolder.name;
         editedDescription.value = newFolder.description;
@@ -106,7 +98,6 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
     );
 
 
-    // Начать редактирование папки
     const startEditing = (folder) => {
         editingFolder.value = folder;
         editedName.value = folder.name;
@@ -115,12 +106,10 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
         showEditDialog.value = true;
     };
 
-    // Сохранить изменения папки
     const saveFolder = () => {
         if (editingFolder.value) {
             const folderIndex = folders.value.findIndex(f => f.id === editingFolder.value.id);
             if (folderIndex !== -1) {
-                // Обновляем папку реактивно (важно создать новый объект для реактивности)
                 folders.value[folderIndex] = {
                     ...folders.value[folderIndex],
                     name: editedName.value,
@@ -128,8 +117,6 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
                     icon: editedIcon.value
                 };
 
-                // Обновляем название доски, связанной с папкой
-                // Это должно сработать автоматически через watch выше, но дублируем для надежности
                 const boardIndex = boards.value.findIndex(b => b.folderId === editingFolder.value.id);
                 if (boardIndex !== -1) {
                     boards.value[boardIndex] = {
@@ -142,7 +129,6 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
         showEditDialog.value = false;
     };
 
-    // Удалить папку и связанную доску
     const deleteFolder = (folder) => {
         // Удаляем связанную доску
         const boardIndex = boards.value.findIndex(b => b.id === folder.boardId);
@@ -150,14 +136,12 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
             boards.value.splice(boardIndex, 1);
         }
 
-        // Удаляем папку
         const folderIndex = folders.value.findIndex(f => f.id === folder.id);
         if (folderIndex !== -1) {
             folders.value.splice(folderIndex, 1);
         }
     };
 
-    // Подтверждение удаления папки
     const confirmDeleteFolder = ref(null);
     const showDeleteDialog = ref(false);
 
@@ -188,7 +172,7 @@ export const useFoldersBoardsStore = defineStore('foldersBoardsStore', () => {
 });
 export const useDrawingStore = defineStore("drawing", () => {
     const isDrawingMode = ref(false);
-    const currentTool = ref("select"); // Инициализируем значение для currentTool
+    const currentTool = ref('pen');
 
     const toggleDrawing = () => {
         isDrawingMode.value = !isDrawingMode.value;
@@ -198,6 +182,12 @@ export const useDrawingStore = defineStore("drawing", () => {
         currentTool.value = tool;
     };
 
-    return { isDrawingMode, toggleDrawing, currentTool, setTool };
+
+    return {
+        isDrawingMode,
+        toggleDrawing,
+        currentTool,
+        setTool
+    };
 });
-1
+

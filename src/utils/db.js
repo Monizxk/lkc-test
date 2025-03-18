@@ -1,6 +1,6 @@
-// Функции для работы с IndexedDB
+// Функции с IndexedDB
 
-// Вспомогательная функция для преобразования любого типа ключа в строку
+
 export const toStringKey = (key) => {
     if (key === null || key === undefined) {
         return '';
@@ -8,7 +8,6 @@ export const toStringKey = (key) => {
     return String(key);
 };
 
-// Функция для инициализации базы данных
 export const initDB = (dbName, storeName, version = 1) => {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(dbName, version);
@@ -29,7 +28,6 @@ export const initDB = (dbName, storeName, version = 1) => {
     });
 };
 
-// Функция для вставки данных (принимает ключ и значение в формате JSON)
 export const insertData = async (dbName, storeName, key, value) => {
     try {
         const db = await initDB(dbName, storeName);
@@ -37,10 +35,8 @@ export const insertData = async (dbName, storeName, key, value) => {
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
 
-            // Преобразуем ключ в строку
             const stringKey = toStringKey(key);
 
-            // Используем ключ только для идентификации записи, но не добавляем в значение
             const data = { id: stringKey, value: value };
 
             const request = store.put(data);
@@ -63,7 +59,6 @@ export const insertData = async (dbName, storeName, key, value) => {
     }
 };
 
-// Функция для получения данных по ключу
 export const getDataByKey = async (dbName, storeName, key) => {
     try {
         const db = await initDB(dbName, storeName);
@@ -71,14 +66,12 @@ export const getDataByKey = async (dbName, storeName, key) => {
             const transaction = db.transaction([storeName], 'readonly');
             const store = transaction.objectStore(storeName);
 
-            // Преобразуем ключ в строку
             const stringKey = toStringKey(key);
 
             const request = store.get(stringKey);
 
             request.onsuccess = (event) => {
                 const result = event.target.result;
-                // Возвращаем только значение без id
                 resolve(result ? result.value : undefined);
             };
 
@@ -96,7 +89,6 @@ export const getDataByKey = async (dbName, storeName, key) => {
     }
 };
 
-// Функция для получения всех объектов из хранилища
 export const getAllData = async (dbName, storeName) => {
     try {
         const db = await initDB(dbName, storeName);
@@ -108,7 +100,6 @@ export const getAllData = async (dbName, storeName) => {
 
             request.onsuccess = (event) => {
                 const results = event.target.result;
-                // Преобразуем результаты, чтобы вернуть только значения
                 const values = results.map(item => item.value);
                 resolve(values);
             };
@@ -127,7 +118,6 @@ export const getAllData = async (dbName, storeName) => {
     }
 };
 
-// Функция для удаления данных по ключу
 export const deleteDataByKey = async (dbName, storeName, key) => {
     try {
         const db = await initDB(dbName, storeName);
@@ -135,7 +125,6 @@ export const deleteDataByKey = async (dbName, storeName, key) => {
             const transaction = db.transaction([storeName], 'readwrite');
             const store = transaction.objectStore(storeName);
 
-            // Преобразуем ключ в строку
             const stringKey = toStringKey(key);
 
             const request = store.delete(stringKey);

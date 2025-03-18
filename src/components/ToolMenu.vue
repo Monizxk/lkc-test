@@ -2,9 +2,9 @@
 import { ref, computed, onMounted, onUnmounted } from "vue";
 import {useDrawingStore} from "@/stores/useBoardStore.js";
 
+const emit = defineEmits(['trigger-file-input']);
 const store = useDrawingStore();
 
-// Инструменты для боковой панели
 const tools = ref([
   { title: 'Draw', value: 'pen', icon: 'mdi-draw' },
   { title: 'Eraser', value: 'eraser', icon: 'mdi-eraser' },
@@ -15,19 +15,25 @@ const tools = ref([
   { title: 'Note', value: 'note', icon: 'mdi-note-outline' },
 ]);
 
-// Получаем текущий инструмент из store
-const currentTool = computed(() => store.currentTool);
+computed(() => store.currentTool);
 
-// Функция выбора инструмента
+defineProps({
+  fileInputRef: Object
+});
 const selectTool = (tool) => {
   store.setTool(tool);
   console.log('Выбран инструмент:', tool);
+
+  if (tool === 'image') {
+    emit('trigger-file-input');
+  }
 };
+
+
 </script>
 
 <template>
   <div class="tool-menu">
-    <!-- Боковая панель инструментов -->
     <v-sheet class="sidebar-panel" width="64" color="grey-lighten-3" elevation="0">
       <v-list density="compact" nav>
         <v-list-item
@@ -54,9 +60,9 @@ const selectTool = (tool) => {
 <style scoped>
 .tool-menu {
   position: absolute;
-  top: 85px; /* Adjust this value to match header height */
+  top: 85px;
   left: 0;
-  height: calc(100% - 64px); /* Subtract header height */
+  height: calc(100% - 64px);
   z-index: 10;
 }
 

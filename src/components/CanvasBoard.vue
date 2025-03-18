@@ -9,7 +9,6 @@
         </v-card-title>
         <h2>{{ boardName }}</h2>
         <div>
-          <!-- Кнопка довідки -->
           <v-btn
               class="hover-visible"
               @click="goToHelp"
@@ -17,7 +16,6 @@
               size=""
           ></v-btn>
 
-          <!-- Avatar button with dropdown menu -->
           <v-menu open-on-click>
             <template v-slot:activator="{ props }">
               <v-btn
@@ -48,36 +46,57 @@
       </div>
     </v-card-item>
   </v-card>
-    <ToolMenu/>
+  <input
+      type="file"
+      ref="fileInputRef"
+      @change="handleImageUpload"
+      accept="image/*"
+      style="display: none"
+  />
+
+  <ToolMenu
+      :fileInputRef="fileInputRef"
+      @trigger-file-input="triggerFileInput"
+  />
 
     <div class="konva-container">
-      <v-stage
-          :config="stageConfig"
-          ref="stageRef"
-          @mousedown="startDrawing"
-          @mousemove="draw"
-          @mouseup="stopDrawing"
-          @mouseleave="stopDrawing"
-      >
-        <v-layer>
-          <!-- Background with colored background -->
-          <v-rect :config="backgroundConfig"></v-rect>
-          <v-text :config="textConfig"></v-text>
+      <input
+          type="file"
+          ref="fileInputRef"
+          @change="handleImageUpload"
+          accept="image/*"
+          style="display: none"
+      />
 
-          <!-- Lines for drawing -->
-          <v-line
-              v-for="(line, index) in lines"
-              :key="index"
-              :config="{
+      <div id="stage-cont">
+        <v-stage
+            :config="stageConfig"
+            ref="stageRef"
+            @mousedown="startDrawing"
+            @mousemove="draw"
+            @mouseup="stopDrawing"
+            @mouseleave="stopDrawing"
+        >
+          <v-layer>
+            <!-- Background with colored background -->
+<!--            <v-rect :config="backgroundConfig"></v-rect>-->
+<!--            <v-text :config="textConfig"></v-text>-->
+
+            <!-- Lines for drawing -->
+            <v-line
+                v-for="(line, index) in lines"
+                :key="index"
+                :config="{
         points: line.points,
         stroke: 'black',
         strokeWidth: 3,
         lineCap: 'round',
         lineJoin: 'round',
       }"
-          />
-        </v-layer>
-      </v-stage>
+            />
+          </v-layer>
+        </v-stage>
+      </div>
     </div>
 </template>
 
@@ -88,11 +107,14 @@ import {useFoldersBoardsStore} from "@/stores/useBoardStore.js";
 import ToolMenu from "@/components/ToolMenu.vue";
 import {getBoard} from "@/utils/boardStotage.js";
 import { useDrawingStore } from "@/stores/useBoardStore.js";
+import Konva from 'konva';
+import {image} from "@/api/index.js";
 
 
 const route = useRoute();
 const lines = ref([]);
 const router = useRouter();
+const fileInputRef = ref(null);
 const foldersBoardsStore = useFoldersBoardsStore();
 const stageRef = ref(null);
 const isDrawing = ref(false);
@@ -100,15 +122,12 @@ const eraserSize = ref(1);
 const store = useDrawingStore();
 
 
-// Получаем ID доски из URL
 const boardId = computed(() => parseInt(route.params.boardId));
 
 const currentBoard = computed(() => foldersBoardsStore.getBoardById(boardId.value));
 
-// Реактивное значение для имени, зависящее от ввода пользователя
 const boardName = ref("");
 
-// Следим за изменениями в `currentBoard`, чтобы обновлять `folderName`
 watch(
     currentBoard,
     (newBoard) => {
@@ -119,13 +138,11 @@ watch(
     { immediate: true }
 );
 
-// Конфигурация для canvas (без container)
 const stageConfig = ref({
   width: window.innerWidth,
-  height: window.innerHeight - 64, // Вычитаем высоту заголовка
+  height: window.innerHeight - 64,
 });
 
-// Обновление размера канваса при изменении размера окна
 const handleResize = () => {
   stageConfig.value.width = window.innerWidth;
   stageConfig.value.height = window.innerHeight - 64;
@@ -183,47 +200,37 @@ const startDrawing = (e) => {
 };
 
 const draw = (e) => {
-  // Only draw if the mouse is pressed down
   if (!isDrawing.value) return;
 
   const stage = e.target.getStage();
   const point = stage.getPointerPosition();
 
-  // Add new point to the last line
   const lastLine = lines.value[lines.value.length - 1];
-  // Create a new array with the updated points to ensure reactivity
   const newPoints = [...lastLine.points, point.x, point.y];
 
-  // Update the points in a reactive way
   lines.value[lines.value.length - 1] = {
     ...lastLine,
     points: newPoints
   };
 
-  // Проверка, если выбран инструмент "ластик"
   if (store.currentTool === 'eraser') {
-    // Простая логика стирания
     eraseAtPosition(point);
   }
 };
 
 const eraseAtPosition = (pos) => {
-  // Упрощенная версия: просто удаляем линии, которые находятся рядом с позицией ластика
+
   const eraserRadius = eraserSize.value;
 
-  // Фильтруем линии, которые не должны быть стерты
   lines.value = lines.value.filter(line => {
-    // Проверяем каждую точку линии
     for (let i = 0; i < line.points.length; i += 2) {
       const x = line.points[i];
       const y = line.points[i + 1];
 
-      // Рассчитываем расстояние от точки до позиции ластика
       const dx = x - pos.x;
       const dy = y - pos.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
 
-      // Если точка находится в радиусе ластика, удаляем линию
       if (distance <= eraserRadius) {
         return false;
       }
@@ -234,6 +241,95 @@ const eraseAtPosition = (pos) => {
 
 const stopDrawing = () => {
   isDrawing.value = false;
+};
+
+const handleImageUpload = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    // Сначала загружаем файл на сервер
+    const response = await image.upload({ file: file });
+    console.log(response);  // Пример URL: https://fourex-lkc.s3.eu-north-1.amazonaws.com/beb93d65e1bd
+    const imageUrl = response.url; // Используем полученный URL от сервера
+
+    // Загружаем изображение по URL
+    const img = new Image();
+    img.crossOrigin = "Anonymous"; // Если изображение с другого домена
+
+    // Устанавливаем обработчики до установки src
+    img.onload = () => {
+      const stage = stageRef.value.getNode();
+      const pos = stage.getPointerPosition() || { x: 100, y: 100 };
+
+      // Создаем изображение Konva
+      const konvaImage = new Konva.Image({
+        x: pos.x,
+        y: pos.y,
+        image: img, // Передаем сам объект изображения
+        width: img.width > 300 ? 300 : img.width,
+        height: img.width > 300 ? (img.height * 300) / img.width : img.height,
+        draggable: true
+      });
+
+      // Добавляем обработчики событий для трансформации
+      konvaImage.on('transform', () => {
+        const scaleX = konvaImage.scaleX();
+        const scaleY = konvaImage.scaleY();
+        konvaImage.scaleX(1);
+        konvaImage.scaleY(1);
+        konvaImage.width(konvaImage.width() * scaleX);
+        konvaImage.height(konvaImage.height() * scaleY);
+      });
+
+      // Получаем текущий слой
+      const layer = stageRef.value.getNode().getLayers()[0];
+
+      // Удаляем существующие трансформеры перед добавлением нового
+      layer.find('Transformer').forEach(tr => tr.destroy());
+
+      // Добавляем изображение и новый трансформер
+      layer.add(konvaImage);
+
+      const tr = new Konva.Transformer({
+        nodes: [konvaImage],
+        boundBoxFunc: (oldBox, newBox) => {
+          if (newBox.width < 20 || newBox.height < 20) {
+            return oldBox;
+          }
+          return newBox;
+        }
+      });
+
+      layer.add(tr);
+      layer.draw();
+
+      // Сбрасываем выбор файла
+      event.target.value = '';
+    };
+
+    // Обработчик ошибки загрузки изображения
+    img.onerror = (error) => {
+      console.error("Ошибка загрузки изображения:", error);
+      alert("Не удалось загрузить изображение. Пожалуйста, попробуйте снова.");
+      event.target.value = '';
+    };
+
+    // Установка src после определения обработчиков
+    img.src = imageUrl;
+
+  } catch (error) {
+    console.error("Ошибка при загрузке файла:", error);
+    alert("Не удалось загрузить файл. Пожалуйста, попробуйте снова.");
+    event.target.value = '';
+  }
+};
+
+
+const triggerFileInput = () => {
+  if (fileInputRef.value) {
+    fileInputRef.value.click();
+  }
 };
 
 </script>

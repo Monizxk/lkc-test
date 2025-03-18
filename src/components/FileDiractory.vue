@@ -47,7 +47,6 @@ const availableIcons = [
 ];
 
 const createFolder = () => {
-  // Создаем новую папку
   const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
 
   const newFolder = {
@@ -65,18 +64,13 @@ const createFolder = () => {
     board: null
   }).then()
 
-  // Создаем пустую доску с таким же ID
   const board = {
     id: newFolderId,
     name: `Доска ${newFolderId}`,
   };
 
-  // Добавляем папку в массив папок
   folders.value.push(newFolder);
 
-  // Здесь можно сохранить информацию о доске, если необходимо
-
-  // Открываем диалог редактирования (если нужно)
   editingFolder.value = newFolder;
   editedName.value = newFolder.name;
   editedDescription.value = newFolder.description;
