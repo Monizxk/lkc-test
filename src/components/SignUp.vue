@@ -3,7 +3,8 @@
 import { ref, onMounted } from 'vue'
 import { VParallax } from 'vuetify/components'
 import { useRouter } from 'vue-router'
-import {auth} from "@/api/index.js";
+import {Auth, User} from "@/api/index.js";
+import {GoogleLogin} from "vue3-google-login";
 
 const router = useRouter()
 const agreement = ref(false)
@@ -46,10 +47,21 @@ const rules = {
 const goToRegister = () => router.push('/register')
 
 const submitForm = () => {
-  auth.login({
-    name: login.value,
+  Auth.login({
+    email: email.value,
     password: password.value
   })
+
+  User.me().then(user => {
+    console.log(user);
+  });
+}
+
+const callback = async (response) => {
+  await Auth.google({ credential: response.credential });
+  const user = await User.me();
+
+  console.log(user);
 }
 
 </script>
@@ -84,13 +96,21 @@ width: 400px; height: 450px; border-radius: 20px; overflow: hidden;">
 
 
         <v-form ref="form" v-model="isValid" class="pa-4">
+<!--          <v-text-field-->
+<!--              v-model="login"-->
+<!--              :rules="[rules.login, rules.length(6)]"-->
+<!--              color="deep-purple"-->
+<!--              counter="6"-->
+<!--              label="Emai"-->
+<!--              type="text"-->
+<!--              variant="filled"-->
+<!--          ></v-text-field>-->
           <v-text-field
-              v-model="login"
-              :rules="[rules.login, rules.length(6)]"
+              v-model="email"
+              :rules="[rules.email]"
               color="deep-purple"
-              counter="6"
-              label="Login"
-              type="text"
+              label="Email address"
+              type="email"
               variant="filled"
           ></v-text-field>
           <v-text-field
@@ -102,14 +122,6 @@ width: 400px; height: 450px; border-radius: 20px; overflow: hidden;">
               type="password"
               variant="filled"
           ></v-text-field>
-<!--          <v-text-field-->
-<!--              v-model="email"-->
-<!--              :rules="[rules.email]"-->
-<!--              color="deep-purple"-->
-<!--              label="Email address"-->
-<!--              type="email"-->
-<!--              variant="filled"-->
-<!--          ></v-text-field>-->
 <!--          <v-checkbox-->
 <!--              v-model="agreement"-->
 <!--              :rules="[rules.required]"-->
@@ -125,7 +137,8 @@ width: 400px; height: 450px; border-radius: 20px; overflow: hidden;">
         </v-form>
 
         <v-divider></v-divider>
-        <div id="google-signin-btn" class="d-flex justify-center my-4"></div>
+<!--        <div id="google-signin-btn" class="d-flex justify-center my-4"></div>-->
+        <GoogleLogin :callback="callback" />
 
         <v-card-actions>
           <v-btn variant="text" @click="goToRegister">Register</v-btn>

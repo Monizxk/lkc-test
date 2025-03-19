@@ -59,45 +59,33 @@
       @trigger-file-input="triggerFileInput"
   />
 
-    <div class="konva-container">
-      <input
-          type="file"
-          ref="fileInputRef"
-          @change="handleImageUpload"
-          accept="image/*"
-          style="display: none"
-      />
+  <div class="konva-container">
+    <input
+        type="file"
+        ref="fileInputRef"
+        @change="handleImageUpload"
+        accept="image/*"
+        style="display: none"
+    />
 
-      <div id="stage-cont">
-        <v-stage
-            :config="stageConfig"
-            ref="stageRef"
-            @mousedown="startDrawing"
-            @mousemove="draw"
-            @mouseup="stopDrawing"
-            @mouseleave="stopDrawing"
-        >
-          <v-layer>
-            <!-- Background with colored background -->
-<!--            <v-rect :config="backgroundConfig"></v-rect>-->
-<!--            <v-text :config="textConfig"></v-text>-->
+    <div id="stage-cont">
+      <v-stage
+          :config="stageConfig"
+          ref="stageRef"
+          @mousedown="startDrawing"
+          @mousemove="draw"
+          @mouseup="stopDrawing"
+          @mouseleave="stopDrawing"
+          @click="handleStageClick"
+      >
+        <v-layer ref="mainLayerRef">
+        </v-layer>
 
-            <!-- Lines for drawing -->
-            <v-line
-                v-for="(line, index) in lines"
-                :key="index"
-                :config="{
-        points: line.points,
-        stroke: 'black',
-        strokeWidth: 3,
-        lineCap: 'round',
-        lineJoin: 'round',
-      }"
-            />
-          </v-layer>
-        </v-stage>
-      </div>
+        <v-layer ref="selectionLayerRef">
+        </v-layer>
+      </v-stage>
     </div>
+  </div>
 </template>
 
 <script setup>
@@ -108,24 +96,26 @@ import ToolMenu from "@/components/ToolMenu.vue";
 import {getBoard} from "@/utils/boardStotage.js";
 import { useDrawingStore } from "@/stores/useBoardStore.js";
 import Konva from 'konva';
-import {image} from "@/api/index.js";
-
+import {Image as ImageAPI} from "@/api/index.js";
 
 const route = useRoute();
-const lines = ref([]);
 const router = useRouter();
 const fileInputRef = ref(null);
 const foldersBoardsStore = useFoldersBoardsStore();
 const stageRef = ref(null);
+const mainLayerRef = ref(null);
+const selectionLayerRef = ref(null);
 const isDrawing = ref(false);
-const eraserSize = ref(1);
+const eraserSize = ref(10);
 const store = useDrawingStore();
 
+const currentLine = ref(null);
+const boardObjects = ref([]);
+const selectedObject = ref(null);
+const transformer = ref(null);
 
 const boardId = computed(() => parseInt(route.params.boardId));
-
 const currentBoard = computed(() => foldersBoardsStore.getBoardById(boardId.value));
-
 const boardName = ref("");
 
 watch(
@@ -146,101 +136,238 @@ const stageConfig = ref({
 const handleResize = () => {
   stageConfig.value.width = window.innerWidth;
   stageConfig.value.height = window.innerHeight - 64;
-  backgroundConfig.value.width = stageConfig.value.width;
-  backgroundConfig.value.height = stageConfig.value.height;
-  textConfig.value.x = stageConfig.value.width / 2;
-  textConfig.value.y = stageConfig.value.height / 2;
 };
 
 const onStartup = async () => {
-  const board = await getBoard(boardId.value)
+  const board = await getBoard(boardId.value);
   boardName.value = board.name;
 
-  console.log(board)
+  if (board.objects && board.objects.length > 0) {
+    loadSavedObjects(board.objects);
+  }
+}
+
+const loadSavedObjects = (objects) => {
+  if (!mainLayerRef.value) return;
+
+  const layer = mainLayerRef.value.getNode();
+
+  objects.forEach(obj => {
+    if (obj.type === 'line') {
+      const line = new Konva.Line({
+        points: obj.points,
+        stroke: obj.stroke || 'black',
+        strokeWidth: obj.strokeWidth || 3,
+        lineCap: 'round',
+        lineJoin: 'round',
+        id: obj.id || `line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        draggable: true
+      });
+
+      line.on('click', () => handleObjectClick(line));
+      line.on('dragstart', (e) => handleDragStart(e));
+      line.on('dragend', (e) => handleDragEnd(e));
+
+      layer.add(line);
+      boardObjects.value.push(line);
+    } else if (obj.type === 'image') {
+      const img = new Image();
+      img.crossOrigin = "Anonymous";
+
+      img.onload = () => {
+        const konvaImage = new Konva.Image({
+          x: obj.x,
+          y: obj.y,
+          image: img,
+          width: obj.width,
+          height: obj.height,
+          id: obj.id || `image-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+          draggable: true
+        });
+
+        konvaImage.on('click', () => handleObjectClick(konvaImage));
+        konvaImage.on('dragstart', (e) => handleDragStart(e));
+        konvaImage.on('dragend', (e) => handleDragEnd(e));
+
+        layer.add(konvaImage);
+        boardObjects.value.push(konvaImage);
+        layer.draw();
+      };
+
+      img.src = obj.src;
+    }
+  });
+
+  layer.draw();
 }
 
 onMounted(async () => {
-  await onStartup()
+  await onStartup();
   window.addEventListener('resize', handleResize);
+
+  if (selectionLayerRef.value) {
+    transformer.value = new Konva.Transformer({
+      boundBoxFunc: (oldBox, newBox) => {
+        if (newBox.width < 5 || newBox.height < 5) {
+          return oldBox;
+        }
+        return newBox;
+      }
+    });
+
+    selectionLayerRef.value.getNode().add(transformer.value);
+  }
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
 });
 
-
-const dragItemId = ref(null);
-
-
-  const handleDragStart = (e) => {
-    dragItemId.value = e.target.id();
-    console.log("Drag started:", dragItemId.value);
-  };
-
-  const handleDragEnd = (e) => {
-    console.log("Drag ended:", e.target.x(), e.target.y());
-    dragItemId.value = null;
-  };
-
-  const handleDragMove = (e) => {
-    console.log("Drag move:", e.target.x(), e.target.y());
-  };
-
-const goBack = () => {
-  router.push('/files');
+const handleStageClick = (e) => {
+  if (e.target === e.target.getStage()) {
+    deselectAll();
+  }
 };
 
-const serializeBoard = (boardId) => {
-}
+const handleObjectClick = (obj) => {
+  if (store.currentTool === 'pen' || store.currentTool === 'eraser') {
+    return;
+  }
+
+  selectedObject.value = obj;
+
+  transformer.value.nodes([]);
+
+  transformer.value.nodes([obj]);
+
+  selectionLayerRef.value.getNode().draw();
+};
+
+
+const deselectAll = () => {
+  selectedObject.value = null;
+  if (transformer.value) {
+    transformer.value.nodes([]);
+    selectionLayerRef.value.getNode().draw();
+  }
+};
+
+const handleDragStart = (e) => {
+  const id = e.target.id();
+  console.log("Drag started:", id);
+};
+
+const handleDragEnd = (e) => {
+  console.log("Drag ended:", e.target.x(), e.target.y());
+
+
+  const layer = mainLayerRef.value.getNode();
+  layer.draw();
+
+
+  saveBoard();
+};
+
 
 const startDrawing = (e) => {
+  if (store.currentTool !== 'pen') {
+    return;
+  }
+
   isDrawing.value = true;
   const pos = e.target.getStage().getPointerPosition();
-  lines.value.push({ points: [pos.x, pos.y] });
+
+  currentLine.value = new Konva.Line({
+    points: [pos.x, pos.y],
+    stroke: 'black',
+    strokeWidth: 3,
+    lineCap: 'round',
+    lineJoin: 'round',
+    id: `line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    draggable: true
+  });
+
+  mainLayerRef.value.getNode().add(currentLine.value);
+
+
+  currentLine.value.on('click', () => handleObjectClick(currentLine.value));
+  currentLine.value.on('dragstart', (e) => handleDragStart(e));
+  currentLine.value.on('dragend', (e) => handleDragEnd(e));
 };
 
 const draw = (e) => {
-  if (!isDrawing.value) return;
+  if (store.currentTool === 'eraser' && isDrawing.value) {
+    const stage = e.target.getStage();
+    const point = stage.getPointerPosition();
+    eraseAtPosition(point);
+    return;
+  }
+
+  if (!isDrawing.value || store.currentTool !== 'pen' || !currentLine.value) return;
 
   const stage = e.target.getStage();
   const point = stage.getPointerPosition();
 
-  const lastLine = lines.value[lines.value.length - 1];
-  const newPoints = [...lastLine.points, point.x, point.y];
+  const newPoints = currentLine.value.points().concat([point.x, point.y]);
+  currentLine.value.points(newPoints);
 
-  lines.value[lines.value.length - 1] = {
-    ...lastLine,
-    points: newPoints
-  };
-
-  if (store.currentTool === 'eraser') {
-    eraseAtPosition(point);
-  }
-};
-
-const eraseAtPosition = (pos) => {
-
-  const eraserRadius = eraserSize.value;
-
-  lines.value = lines.value.filter(line => {
-    for (let i = 0; i < line.points.length; i += 2) {
-      const x = line.points[i];
-      const y = line.points[i + 1];
-
-      const dx = x - pos.x;
-      const dy = y - pos.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-
-      if (distance <= eraserRadius) {
-        return false;
-      }
-    }
-    return true;
-  });
+  mainLayerRef.value.getNode().draw();
 };
 
 const stopDrawing = () => {
+  if (!isDrawing.value) return;
+
   isDrawing.value = false;
+
+  if (currentLine.value && store.currentTool === 'pen') {
+    boardObjects.value.push(currentLine.value);
+
+    saveBoard();
+  }
+
+  currentLine.value = null;
+};
+
+const eraseAtPosition = (pos) => {
+  const layer = mainLayerRef.value.getNode();
+  const eraserRadius = eraserSize.value;
+
+  const objectsToRemove = [];
+
+  layer.children.forEach(obj => {
+
+    if (obj instanceof Konva.Line) {
+      const points = obj.points();
+      for (let i = 0; i < points.length; i += 2) {
+        const x = points[i];
+        const y = points[i + 1];
+
+        const dx = x - pos.x;
+        const dy = y - pos.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= eraserRadius) {
+          objectsToRemove.push(obj);
+          break;
+        }
+      }
+    }
+  });
+
+  objectsToRemove.forEach(obj => {
+    obj.destroy();
+
+    const index = boardObjects.value.findIndex(item => item === obj);
+    if (index !== -1) {
+      boardObjects.value.splice(index, 1);
+    }
+  });
+
+  layer.draw();
+
+  if (objectsToRemove.length > 0) {
+    saveBoard();
+  }
 };
 
 const handleImageUpload = async (event) => {
@@ -248,31 +375,30 @@ const handleImageUpload = async (event) => {
   if (!file) return;
 
   try {
-    // Сначала загружаем файл на сервер
-    const response = await image.upload({ file: file });
-    console.log(response);  // Пример URL: https://fourex-lkc.s3.eu-north-1.amazonaws.com/beb93d65e1bd
-    const imageUrl = response.url; // Используем полученный URL от сервера
+    const response = await ImageAPI.upload({ file: file });
+    console.log(response);
+    const imageUrl = response.url;
 
-    // Загружаем изображение по URL
     const img = new Image();
-    img.crossOrigin = "Anonymous"; // Если изображение с другого домена
+    img.crossOrigin = "Anonymous";
 
-    // Устанавливаем обработчики до установки src
     img.onload = () => {
       const stage = stageRef.value.getNode();
       const pos = stage.getPointerPosition() || { x: 100, y: 100 };
 
-      // Создаем изображение Konva
       const konvaImage = new Konva.Image({
         x: pos.x,
         y: pos.y,
-        image: img, // Передаем сам объект изображения
+        image: img,
         width: img.width > 300 ? 300 : img.width,
         height: img.width > 300 ? (img.height * 300) / img.width : img.height,
+        id: `image-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
         draggable: true
       });
 
-      // Добавляем обработчики событий для трансформации
+      konvaImage.on('click', () => handleObjectClick(konvaImage));
+      konvaImage.on('dragstart', (e) => handleDragStart(e));
+      konvaImage.on('dragend', (e) => handleDragEnd(e));
       konvaImage.on('transform', () => {
         const scaleX = konvaImage.scaleX();
         const scaleY = konvaImage.scaleY();
@@ -282,40 +408,24 @@ const handleImageUpload = async (event) => {
         konvaImage.height(konvaImage.height() * scaleY);
       });
 
-      // Получаем текущий слой
-      const layer = stageRef.value.getNode().getLayers()[0];
+      mainLayerRef.value.getNode().add(konvaImage);
+      boardObjects.value.push(konvaImage);
 
-      // Удаляем существующие трансформеры перед добавлением нового
-      layer.find('Transformer').forEach(tr => tr.destroy());
+      mainLayerRef.value.getNode().draw();
 
-      // Добавляем изображение и новый трансформер
-      layer.add(konvaImage);
+      handleObjectClick(konvaImage);
 
-      const tr = new Konva.Transformer({
-        nodes: [konvaImage],
-        boundBoxFunc: (oldBox, newBox) => {
-          if (newBox.width < 20 || newBox.height < 20) {
-            return oldBox;
-          }
-          return newBox;
-        }
-      });
+      saveBoard();
 
-      layer.add(tr);
-      layer.draw();
-
-      // Сбрасываем выбор файла
       event.target.value = '';
     };
 
-    // Обработчик ошибки загрузки изображения
     img.onerror = (error) => {
       console.error("Ошибка загрузки изображения:", error);
       alert("Не удалось загрузить изображение. Пожалуйста, попробуйте снова.");
       event.target.value = '';
     };
 
-    // Установка src после определения обработчиков
     img.src = imageUrl;
 
   } catch (error) {
@@ -325,6 +435,34 @@ const handleImageUpload = async (event) => {
   }
 };
 
+const saveBoard = () => {
+  const serializedObjects = boardObjects.value.map(obj => {
+    if (obj instanceof Konva.Line) {
+      return {
+        id: obj.id(),
+        type: 'line',
+        points: obj.points(),
+        stroke: obj.stroke(),
+        strokeWidth: obj.strokeWidth()
+      };
+    } else if (obj instanceof Konva.Image) {
+      return {
+        id: obj.id(),
+        type: 'image',
+        x: obj.x(),
+        y: obj.y(),
+        width: obj.width(),
+        height: obj.height(),
+        src: obj.image().src
+      };
+    }
+    return null;
+  }).filter(obj => obj !== null);
+
+  console.log("Сохранение состояния доски:", serializedObjects);
+
+  // updateBoard(boardId.value, { objects: serializedObjects });
+};
 
 const triggerFileInput = () => {
   if (fileInputRef.value) {
@@ -332,10 +470,51 @@ const triggerFileInput = () => {
   }
 };
 
+const deleteSelectedObject = () => {
+  if (selectedObject.value) {
+    selectedObject.value.destroy();
+
+    const index = boardObjects.value.findIndex(obj => obj === selectedObject.value);
+    if (index !== -1) {
+      boardObjects.value.splice(index, 1);
+    }
+
+    deselectAll();
+
+    mainLayerRef.value.getNode().draw();
+
+    saveBoard();
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (selectedObject.value) {
+        deleteSelectedObject();
+      }
+    }
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', (e) => {
+    if (e.key === 'Delete' || e.key === 'Backspace') {
+      if (selectedObject.value) {
+        deleteSelectedObject();
+      }
+    }
+  });
+});
+
+defineExpose({
+  saveBoard,
+  handleResize,
+  deleteSelectedObject
+});
 </script>
 
 <style scoped>
-
 .board-header h2 {
   margin-left: 16px;
 }

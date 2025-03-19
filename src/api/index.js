@@ -1,7 +1,9 @@
-import * as auth from "@/api/auth.js";
-import * as image from "@/api/image.js";
+import * as Auth from "@/api/auth.js";
+import * as Image from "@/api/image.js";
+import * as User from "@/api/user.js";
 
 export {
-    auth,
-    image
+    Auth,
+    Image,
+    User
 }

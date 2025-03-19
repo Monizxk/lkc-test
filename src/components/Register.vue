@@ -3,12 +3,13 @@
 import {ref, onMounted} from 'vue'
 import {VParallax} from 'vuetify/components'
 import {useRouter} from 'vue-router'
-import {auth} from "@/api/index.js";
+import {Auth, User} from "@/api/index.js";
 import axios from "axios";
+import {GoogleLogin} from "vue3-google-login";
 
 const router = useRouter()
 const agreement = ref(false)
-const login = ref(null)
+const name = ref()
 const dialog = ref(false)
 const email = ref()
 const isValid = ref(false)
@@ -36,7 +37,7 @@ onMounted(() => {
 
 
 const rules = {
-  login: v => !!v || 'Username is required',
+  name: v => !!v || 'Username is required',
   email: v => !!(v || '').match(/@/) || 'Please enter a valid email',
   length: len => v => (v || '').length >= len || `Minimum ${len} characters required`,
   password: v => !!(v || '').match(/^[A-Za-z0-9]+$/) ||
@@ -47,10 +48,22 @@ const rules = {
 const goToSignUp = () => router.push('/signup')
 
 const submitForm = () => {
-  auth.register({
-    name: login.value,
+  Auth.register({
+    name: name.value,
+    email: email.value,
     password: password.value
   })
+
+  User.me().then(user => {
+    console.log(user);
+  });
+}
+
+const callback = async (response) => {
+  await Auth.google({ credential: response.credential });
+  const user = await User.me();
+
+  console.log(user);
 }
 
 </script>
@@ -62,7 +75,7 @@ const submitForm = () => {
   >
     <v-container class="d-flex fill-height justify-center align-center rounded-xs">
       <v-card class="pa-6" max-width="500" elevation="10" style="background: rgba(255, 255, 255, 0.9);
-width: 400px; height: 500px; border-radius: 20px; overflow: hidden;">
+width: 400px; height: 600px; border-radius: 20px; overflow: hidden;">
         <v-toolbar color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
           <v-card-title class="text-h6 font-weight-regular">
             Register
@@ -72,11 +85,11 @@ width: 400px; height: 500px; border-radius: 20px; overflow: hidden;">
 
         <v-form ref="form" v-model="isValid" class="pa-4">
           <v-text-field
-              v-model="login"
-              :rules="[rules.login, rules.length(6)]"
+              v-model="name"
+              :rules="[rules.name, rules.length(6)]"
               color="deep-purple"
               counter="6"
-              label="Login"
+              label="Name"
               type="text"
               variant="filled"
           ></v-text-field>
@@ -89,14 +102,14 @@ width: 400px; height: 500px; border-radius: 20px; overflow: hidden;">
               type="password"
               variant="filled"
           ></v-text-field>
-          <!--          <v-text-field-->
-          <!--              v-model="email"-->
-          <!--              :rules="[rules.email]"-->
-          <!--              color="deep-purple"-->
-          <!--              label="Email address"-->
-          <!--              type="email"-->
-          <!--              variant="filled"-->
-          <!--          ></v-text-field>-->
+                    <v-text-field
+                        v-model="email"
+                        :rules="[rules.email]"
+                        color="deep-purple"
+                        label="Email address"
+                        type="email"
+                        variant="filled"
+                    ></v-text-field>
           <v-checkbox
               v-model="agreement"
               :rules="[rules.required]"
@@ -113,7 +126,9 @@ width: 400px; height: 500px; border-radius: 20px; overflow: hidden;">
         </v-form>
 
         <v-divider></v-divider>
-        <div id="google-signin-btn" class="d-flex justify-center my-4"></div>
+<!--        <div id="google-signin-btn" class="d-flex justify-center my-4"></div>-->
+
+        <GoogleLogin :callback="callback" />
 
         <v-card-actions>
           <v-btn variant="text" @click="goToSignUp">Sign Up</v-btn>
