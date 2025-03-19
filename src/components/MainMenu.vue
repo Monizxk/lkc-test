@@ -123,63 +123,66 @@
     </v-row>
   </v-container>
 
-  <v-container class="category-section py-16" style="background-color: #2d3436">
-    <!-- Category Navigation -->
-    <div class="text-center align-center mb-4">
-      <span class="text-white mr-4">LKC is used by:</span>
-      <v-chip-group
-          v-model="selectedCategory"
-          selected-class="selected-category"
-      >
-        <div class="text-center">
-          <v-chip
-              v-for="category in categories"
-              :key="category.id"
-              :value="category.id"
-              variant="text"
-              class="category-chip ma-2"
-              :class="{ 'selected': selectedCategory === category.id }"
-          >
-            {{ category.name }}
-          </v-chip>
-        </div>
-
-      </v-chip-group>
+  <v-container class="category-section py-16">
+    <!-- Заголовок секции -->
+    <div class="text-center mb-4">
+      <span class="text-white">LKC is used by:</span>
     </div>
 
-    <!-- Category Content -->
-    <v-container class="category-text d-flex justify-center align-center">
-      <h2 class="text-h3 text-white font-weight-medium text-center">
-        {{ getCurrentCategory.title }}
-      </h2>
-    </v-container>
-
-    <div class="text-center mb-8">
-    <v-btn
-        color="white"
-        variant="outlined"
-        class="rounded-pill px-8"
-        @click="goToRegister"
+    <!-- Карусель с категориями -->
+    <v-carousel
+        v-model="activeSlide"
+        hide-delimiters
+        :show-arrows="false"
+        height="600"
+        interval="5000"
+        cycle
     >
-      Find out how
-    </v-btn>
-    </div>
-
-    <!-- Category Image -->
-    <v-card
-        class="mx-auto overflow-hidden"
-        max-width="1000"
-        elevation="12"
-    >
-      <v-img
-          :src="getCurrentCategory.image"
-          height="500"
-          cover
+      <v-carousel-item
+          v-for="category in categories"
+          :key="category.id"
       >
-        <!-- Optional overlay or content -->
-      </v-img>
-    </v-card>
+        <!-- Текст категории -->
+        <v-container class="category-text text-center mb-4">
+          <h2 class="text-h3 text-white font-weight-medium">
+            {{ category.title }}
+          </h2>
+
+<!--          <v-chip-->
+<!--              class="category-chip mt-2 mb-6"-->
+<!--              variant="text"-->
+<!--          >-->
+<!--            {{ category.name }}-->
+<!--          </v-chip>-->
+
+          <div class="mt-6 mb-8">
+            <v-btn
+                color="white"
+                variant="outlined"
+                class="rounded-pill px-8"
+                @click="goToRegister"
+            >
+              Find out how
+            </v-btn>
+          </div>
+        </v-container>
+
+        <!-- Изображение категории -->
+        <v-card
+            class="mx-auto overflow-hidden"
+            max-width="900"
+            elevation="8"
+        >
+          <v-img
+              :src="category.image"
+              height="400"
+              cover
+          ></v-img>
+        </v-card>
+      </v-carousel-item>
+    </v-carousel>
   </v-container>
+
 
 </template>
 
@@ -201,17 +204,17 @@ const features = [
   },
   {
     title: 'Upload images & files',
-    description: 'Milanote supports all common file types including JPGs, PDFs, Word, Excel, common design files and many more.'
+    description: 'Supports all common file types including JPGs, PDFs, Word, Excel, common design files and many more.'
   },
   {
     title: 'Save text, images & links from the web',
-    description: 'The Milanote supports all common file types including JPGs, PDFs, Word, Excel, common design files and many more.',
+    description: 'Supports all common file types including JPGs, PDFs, Word, Excel, common design files and many more.',
     description2: ' lets you save inspiration and ideas from any website with a single click.'
   },
   {
     title: 'Add notes & photos from your phone',
-    description: 'Milanote supports all common file types including JPGs, PDFs, Word, Excel, common design files and many more. ',
-    link: 'Milanote app',
+    description: 'Supports all common file types including JPGs, PDFs, Word, Excel, common design files and many more. ',
+    link: 'App',
     description2: ' will be ready to organize as soon as youre back at your computer.'
   },
 ]
@@ -253,6 +256,8 @@ const categories = [
     image: 'https://images.unsplash.com/photo-1503776768674-0e612f631345?q=80&w=2070&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
   }
 ]
+
+const activeSlide = ref(0)
 const selectedCategory = ref('designers')
 
 const getCurrentCategory = computed(() => {
