@@ -270,48 +270,51 @@ const handleDragEnd = (e) => {
 
 
 const startDrawing = (e) => {
-  if (store.currentTool !== 'pen') {
+  isDrawing.value = true;
+
+  if (store.currentTool === 'eraser') {
+    const pos = e.target.getStage().getPointerPosition();
+    eraseAtPosition(pos);
     return;
   }
 
-  isDrawing.value = true;
-  const pos = e.target.getStage().getPointerPosition();
+  if (store.currentTool === 'pen') {
+    const pos = e.target.getStage().getPointerPosition();
 
-  currentLine.value = new Konva.Line({
-    points: [pos.x, pos.y],
-    stroke: 'black',
-    strokeWidth: 3,
-    lineCap: 'round',
-    lineJoin: 'round',
-    id: `line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-    draggable: true
-  });
+    currentLine.value = new Konva.Line({
+      points: [pos.x, pos.y],
+      stroke: 'black',
+      strokeWidth: 3,
+      lineCap: 'round',
+      lineJoin: 'round',
+      id: `line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      draggable: true
+    });
 
-  mainLayerRef.value.getNode().add(currentLine.value);
+    mainLayerRef.value.getNode().add(currentLine.value);
 
-
-  currentLine.value.on('click', () => handleObjectClick(currentLine.value));
-  currentLine.value.on('dragstart', (e) => handleDragStart(e));
-  currentLine.value.on('dragend', (e) => handleDragEnd(e));
+    currentLine.value.on('click', () => handleObjectClick(currentLine.value));
+    currentLine.value.on('dragstart', (e) => handleDragStart(e));
+    currentLine.value.on('dragend', (e) => handleDragEnd(e));
+  }
 };
 
 const draw = (e) => {
-  if (store.currentTool === 'eraser' && isDrawing.value) {
-    const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
-    eraseAtPosition(point);
-    return;
-  }
-
-  if (!isDrawing.value || store.currentTool !== 'pen' || !currentLine.value) return;
+  if (!isDrawing.value) return;
 
   const stage = e.target.getStage();
   const point = stage.getPointerPosition();
 
-  const newPoints = currentLine.value.points().concat([point.x, point.y]);
-  currentLine.value.points(newPoints);
+  if (store.currentTool === 'eraser') {
+    eraseAtPosition(point);
+    return;
+  }
 
-  mainLayerRef.value.getNode().draw();
+  if (store.currentTool === 'pen' && currentLine.value) {
+    const newPoints = currentLine.value.points().concat([point.x, point.y]);
+    currentLine.value.points(newPoints);
+    mainLayerRef.value.getNode().draw();
+  }
 };
 
 const stopDrawing = () => {
@@ -335,7 +338,6 @@ const eraseAtPosition = (pos) => {
   const objectsToRemove = [];
 
   layer.children.forEach(obj => {
-
     if (obj instanceof Konva.Line) {
       const points = obj.points();
       for (let i = 0; i < points.length; i += 2) {
@@ -352,9 +354,24 @@ const eraseAtPosition = (pos) => {
         }
       }
     }
+    else if (obj instanceof Konva.Image) {
+      const imagePos = obj.position();
+      if (
+          pos.x >= imagePos.x &&
+          pos.x <= imagePos.x + obj.width() &&
+          pos.y >= imagePos.y &&
+          pos.y <= imagePos.y + obj.height()
+      ) {
+        objectsToRemove.push(obj);
+      }
+    }
   });
 
   objectsToRemove.forEach(obj => {
+    if (selectedObject.value === obj) {
+      deselectAll();
+    }
+
     obj.destroy();
 
     const index = boardObjects.value.findIndex(item => item === obj);
