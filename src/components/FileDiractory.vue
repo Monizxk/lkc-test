@@ -2,6 +2,7 @@
 import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router'
 import {getBoard, insertBoard} from "@/utils/boardStotage.js";
+import { useAuthStore} from "@/api/auth.js";
 
 const boards = ref([]);
 const router = useRouter()
@@ -130,11 +131,24 @@ const menuItems = ref([
 ]);
 
 const handleMenuItem = (item) => {
+  const authStore = useAuthStore();  // Get the store instance
+  const router = useRouter();  // Get Vue Router instance
+
   switch (item.action) {
     case 'settings':
       console.log('Opening account settings');
       break;
     case 'logout':
+      // Clear session data
+      localStorage.removeItem('authToken');
+      sessionStorage.removeItem('userData');
+
+      // Call the logout action from Pinia store
+      authStore.logout();
+
+      // After calling the logout action, handle the routing
+      router.push('/login');  // Now Vue Router handles the redirection
+
       console.log('Logging out');
       break;
     default:
