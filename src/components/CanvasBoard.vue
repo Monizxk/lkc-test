@@ -106,13 +106,18 @@ const stageRef = ref(null);
 const mainLayerRef = ref(null);
 const selectionLayerRef = ref(null);
 const isDrawing = ref(false);
-const eraserSize = ref(10);
+const eraserSize = ref(15);
 const store = useDrawingStore();
-
+const transformerRef = ref(null);
 const currentLine = ref(null);
 const boardObjects = ref([]);
 const selectedObject = ref(null);
 const transformer = ref(null);
+const activeTextNode = ref(null);
+const TextNode = ref(null);
+const textareaRef = ref(null);
+const noteInputRef = ref(null);
+const activeNoteNode = ref(null);
 
 const boardId = computed(() => parseInt(route.params.boardId));
 const currentBoard = computed(() => foldersBoardsStore.getBoardById(boardId.value));
@@ -122,7 +127,7 @@ watch(
     currentBoard,
     (newBoard) => {
       if (newBoard) {
-        boardName.value = newBoard.name || "Новая папка";
+        boardName.value = newBoard.name || "Нова папка";
       }
     },
     { immediate: true }
@@ -154,6 +159,7 @@ const loadSavedObjects = (objects) => {
 
   objects.forEach(obj => {
     if (obj.type === 'line') {
+      // Your existing line code
       const line = new Konva.Line({
         points: obj.points,
         stroke: obj.stroke || 'black',
@@ -171,6 +177,7 @@ const loadSavedObjects = (objects) => {
       layer.add(line);
       boardObjects.value.push(line);
     } else if (obj.type === 'image') {
+      // Your existing image code
       const img = new Image();
       img.crossOrigin = "Anonymous";
 
@@ -195,37 +202,134 @@ const loadSavedObjects = (objects) => {
       };
 
       img.src = obj.src;
+    } else if (obj.type === 'text') {
+      // Your existing text code
+      const text = new Konva.Text({
+        x: obj.x,
+        y: obj.y,
+        text: obj.text,
+        fontSize: obj.fontSize || 18,
+        fontFamily: obj.fontFamily || 'Arial',
+        fill: obj.fill || 'black',
+        width: obj.width,
+        id: obj.id || `text-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        draggable: true
+      });
+
+      text.on('click', () => handleObjectClick(text));
+      text.on('dblclick', () => editText(text));
+      text.on('dragstart', (e) => handleDragStart(e));
+      text.on('dragend', (e) => handleDragEnd(e));
+
+      layer.add(text);
+      boardObjects.value.push(text);
+    } else if (obj.type === 'note') {
+      // Create a background for the note
+      const noteBackground = new Konva.Rect({
+        x: 0,
+        y: 0,
+        width: obj.width || 200,
+        height: obj.height || 150,
+        fill: obj.backgroundColor || '#fff8b8',
+        stroke: obj.borderColor || '#d9d082',
+        strokeWidth: 1,
+        cornerRadius: 5,
+        shadowColor: 'black',
+        shadowBlur: 5,
+        shadowOffset: { x: 2, y: 2 },
+        shadowOpacity: 0.2,
+        id: `note-bg-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      });
+
+      // Create a text for the note
+      const noteText = new Konva.Text({
+        x: 10,
+        y: 10,
+        text: obj.text || 'Нажмите, чтобы редактировать заметку',
+        fontSize: obj.fontSize || 16,
+        fontFamily: obj.fontFamily || 'Arial',
+        fill: obj.fill || '#333',
+        width: (obj.width || 200) - 20,
+        height: (obj.height || 150) - 20,
+        padding: 5,
+        id: `note-text-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+      });
+
+      // Group note background and text
+      const noteGroup = new Konva.Group({
+        x: obj.x,
+        y: obj.y,
+        id: obj.id || `note-group-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        draggable: true
+      });
+
+      noteGroup.add(noteBackground);
+      noteGroup.add(noteText);
+
+      // Add event listeners to the group
+      noteGroup.on('click', () => handleObjectClick(noteGroup));
+      noteGroup.on('dblclick', () => editNote(noteGroup, noteText));
+      noteGroup.on('dragstart', (e) => handleDragStart(e));
+      noteGroup.on('dragend', (e) => handleDragEnd(e));
+
+      layer.add(noteGroup);
+      boardObjects.value.push(noteGroup);
     }
   });
 
   layer.draw();
-}
+};
+
 
 onMounted(async () => {
   await onStartup();
   window.addEventListener('resize', handleResize);
 
-  if (selectionLayerRef.value) {
-    transformer.value = new Konva.Transformer({
-      boundBoxFunc: (oldBox, newBox) => {
-        if (newBox.width < 5 || newBox.height < 5) {
-          return oldBox;
-        }
-        return newBox;
+  if (!textareaRef.value) {
+    textareaRef.value = document.createElement('textarea');
+    textareaRef.value.style.position = 'absolute';
+    textareaRef.value.style.top = '0px';
+    textareaRef.value.style.left = '0px';
+    textareaRef.value.style.visibility = 'hidden';
+    textareaRef.value.style.padding = '5px';
+    textareaRef.value.style.border = '1px solid black';
+    textareaRef.value.style.overflow = 'hidden';
+    textareaRef.value.style.resize = 'none';
+    textareaRef.value.style.transformOrigin = 'left top';
+    textareaRef.value.style.backgroundColor = 'white';
+    textareaRef.value.style.zIndex = '1000';
+    document.body.appendChild(textareaRef.value);
+  }
+
+  // Ensure that event listeners are properly added
+  if (textareaRef.value) {
+    textareaRef.value.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        textareaRef.value.blur();
       }
     });
 
-    selectionLayerRef.value.getNode().add(transformer.value);
+    // Replace your blur handler with the updated one
+    textareaRef.value.addEventListener('blur', handleTextareaBlur);
   }
 });
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize);
+  if (textareaRef.value) {
+    document.body.removeChild(textareaRef.value);
+  }
 });
 
 const handleStageClick = (e) => {
   if (e.target === e.target.getStage()) {
-    deselectAll();
+    if (store.currentTool === 'text') {
+      addTextNode(e);
+    } else if (store.currentTool === 'note') {
+      addNoteNode(e);
+    } else {
+      deselectAll();
+    }
   }
 };
 
@@ -236,13 +340,14 @@ const handleObjectClick = (obj) => {
 
   selectedObject.value = obj;
 
-  transformer.value.nodes([]);
+  if (transformer.value) {
+    transformer.value.nodes([]);
+  }
 
   transformer.value.nodes([obj]);
 
   selectionLayerRef.value.getNode().draw();
 };
-
 
 const deselectAll = () => {
   selectedObject.value = null;
@@ -250,6 +355,7 @@ const deselectAll = () => {
     transformer.value.nodes([]);
     selectionLayerRef.value.getNode().draw();
   }
+  hideTextarea();
 };
 
 const handleDragStart = (e) => {
@@ -259,15 +365,10 @@ const handleDragStart = (e) => {
 
 const handleDragEnd = (e) => {
   console.log("Drag ended:", e.target.x(), e.target.y());
-
-
   const layer = mainLayerRef.value.getNode();
   layer.draw();
-
-
   saveBoard();
 };
-
 
 const startDrawing = (e) => {
   isDrawing.value = true;
@@ -324,11 +425,120 @@ const stopDrawing = () => {
 
   if (currentLine.value && store.currentTool === 'pen') {
     boardObjects.value.push(currentLine.value);
-
     saveBoard();
   }
 
   currentLine.value = null;
+};
+
+// New Text Functions
+const addTextNode = (e) => {
+  const stage = e.target.getStage();
+  const pos = stage.getPointerPosition();
+
+  const text = new Konva.Text({
+    x: pos.x,
+    y: pos.y,
+    text: '',
+    fontSize: 18,
+    fontFamily: 'Arial',
+    fill: 'black',
+    width: 200,
+    id: `text-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    draggable: true
+  });
+
+  text.on('click', () => handleObjectClick(text));
+  text.on('dblclick', () => editText(text));
+  text.on('dragstart', (e) => handleDragStart(e));
+  text.on('dragend', (e) => handleDragEnd(e));
+  text.on('transform', () => {
+    text.setAttrs({
+      width: text.width() * text.scaleX(),
+      scaleX: 1
+    });
+  });
+
+  mainLayerRef.value.getNode().add(text);
+  boardObjects.value.push(text);
+  mainLayerRef.value.getNode().draw();
+
+  // Select and edit the text immediately
+  handleObjectClick(text);
+  editText(text);
+  saveBoard();
+};
+
+const editText = (textNode) => {
+  // Hide the transformer while editing
+  transformer.value.nodes([]);  // Assuming 'transformer' is a ref
+  selectionLayerRef.value.getNode().draw();  // Assuming 'selectionLayerRef' is a ref
+
+  // Store reference to the active text node
+  activeTextNode.value = textNode;  // Store the active text node in the ref
+
+  const textPosition = textNode.absolutePosition();
+  const stageContainer = stageRef.value.getNode().container();  // Assuming 'stageRef' is a ref
+  const scale = stageRef.value.getNode().scaleX();
+
+  // Calculate the correct position accounting for stage scale and scroll
+  const areaPosition = {
+    x: stageContainer.offsetLeft + textPosition.x * scale,
+    y: stageContainer.offsetTop + textPosition.y * scale
+  };
+
+  // Show textarea
+  textareaRef.value.value = textNode.text();
+  textareaRef.value.style.position = 'absolute';
+  textareaRef.value.style.top = areaPosition.y + 'px';
+  textareaRef.value.style.left = areaPosition.x + 'px';
+  textareaRef.value.style.width = (textNode.width() * scale) + 'px';
+  textareaRef.value.style.height = 'auto';
+  textareaRef.value.style.fontSize = (textNode.fontSize() * scale) + 'px';
+  textareaRef.value.style.fontFamily = textNode.fontFamily();
+  textareaRef.value.style.color = textNode.fill();
+  textareaRef.value.style.visibility = 'visible';
+  textareaRef.value.style.padding = '0px';
+  textareaRef.value.style.margin = '0px';
+  textareaRef.value.style.overflow = 'hidden';
+  textareaRef.value.style.background = 'none';
+  textareaRef.value.style.border = '1px dashed #999';
+  textareaRef.value.style.outline = 'none';
+  textareaRef.value.style.resize = 'none';
+
+  // Focus textarea
+  textareaRef.value.focus();
+};
+
+const handleTextareaChange = (e) => {
+  // Ensure that 'activeTextNode' is properly used here
+  if (activeTextNode.value) {  // Ensure we are accessing the correct 'activeTextNode'
+    activeTextNode.value.text(e.target.value);  // Use the correct activeTextNode
+    mainLayerRef.value.getNode().draw();  // Redraw the layer
+  }
+};
+
+const handleTextareaBlur = () => {
+  if (activeTextNode.value) {
+    activeTextNode.value.text(textareaRef.value.value);
+    mainLayerRef.value.getNode().draw();
+    hideTextarea();
+    saveBoard();
+    activeTextNode.value = null;
+  } else if (activeNoteNode.value) {
+    activeNoteNode.value.text(textareaRef.value.value);
+    mainLayerRef.value.getNode().draw();
+    hideTextarea();
+    saveBoard();
+    activeNoteNode.value = null;
+  }
+};
+
+
+const hideTextarea = () => {
+  textareaRef.value.style.visibility = 'hidden';
+  activeTextNode.value = null;
+  activeNoteNode.value = null;
 };
 
 const eraseAtPosition = (pos) => {
@@ -354,13 +564,13 @@ const eraseAtPosition = (pos) => {
         }
       }
     }
-    else if (obj instanceof Konva.Image) {
-      const imagePos = obj.position();
+    else if (obj instanceof Konva.Image || obj instanceof Konva.Text) {
+      const objPos = obj.position();
       if (
-          pos.x >= imagePos.x &&
-          pos.x <= imagePos.x + obj.width() &&
-          pos.y >= imagePos.y &&
-          pos.y <= imagePos.y + obj.height()
+          pos.x >= objPos.x &&
+          pos.x <= objPos.x + obj.width() &&
+          pos.y >= objPos.y &&
+          pos.y <= objPos.y + obj.height()
       ) {
         objectsToRemove.push(obj);
       }
@@ -386,6 +596,128 @@ const eraseAtPosition = (pos) => {
     saveBoard();
   }
 };
+
+const addNoteNode = (e) => {
+  const stage = e.target.getStage();
+  const pos = stage.getPointerPosition();
+
+  const noteBackground = new Konva.Rect({
+    x: 0,
+    y: 0,
+    width: 200,
+    height: 150,
+    fill: '#fff8b8', // Yellow sticky note color
+    stroke: '#d9d082',
+    strokeWidth: 1,
+    cornerRadius: 5,
+    shadowColor: 'black',
+    shadowBlur: 5,
+    shadowOffset: { x: 2, y: 2 },
+    shadowOpacity: 0.2,
+    id: `note-bg-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+  });
+
+  // Create a text for the note
+  const noteText = new Konva.Text({
+    x: 10,
+    y: 10,
+    text: 'Double-click to edit note',
+    fontSize: 16,
+    fontFamily: 'Arial',
+    fill: '#333',
+    width: 180,
+    height: 130,
+    padding: 5,
+    id: `note-text-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+  });
+
+  // Group note background and text
+  const noteGroup = new Konva.Group({
+    x: pos.x,
+    y: pos.y,
+    id: `note-group-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+    draggable: true
+  });
+
+  noteGroup.add(noteBackground);
+  noteGroup.add(noteText);
+
+  // Add event listeners to the group
+  noteGroup.on('click', () => handleObjectClick(noteGroup));
+  noteGroup.on('dblclick', () => editNote(noteGroup, noteText));
+  noteGroup.on('dragstart', (e) => handleDragStart(e));
+  noteGroup.on('dragend', (e) => handleDragEnd(e));
+
+  // Disable any scaling or resizing logic
+  noteGroup.setAttrs({
+    scaleX: 1,
+    scaleY: 1,
+  });
+
+  // Remove any event listeners for scaling or resizing (transform event)
+  // If you're using a transformer, ensure it's not added for the note
+  noteGroup.on('transform', (e) => {
+    // Cancel the transform event to prevent resizing
+    e.cancelBubble = true;
+  });
+
+  // Prevent any scale changes
+  noteGroup.scaleX(1);
+  noteGroup.scaleY(1);
+
+  mainLayerRef.value.getNode().add(noteGroup);
+  boardObjects.value.push(noteGroup);
+  mainLayerRef.value.getNode().draw();
+
+  // Select and edit the note immediately
+  handleObjectClick(noteGroup);
+  editNote(noteGroup, noteText);
+  saveBoard();
+};
+
+// Function to edit a note
+const editNote = (noteGroup, textNode) => {
+  // Hide the transformer while editing
+  transformer.value.nodes([]);
+  selectionLayerRef.value.getNode().draw();
+
+  // Store reference to the active note node
+  activeNoteNode.value = textNode;
+
+  const notePosition = noteGroup.absolutePosition();
+  const stageContainer = stageRef.value.getNode().container();
+  const scale = stageRef.value.getNode().scaleX();
+
+  // Calculate the correct position accounting for stage scale and scroll
+  const areaPosition = {
+    x: stageContainer.offsetLeft + (notePosition.x + textNode.x()) * scale,
+    y: stageContainer.offsetTop + (notePosition.y + textNode.y()) * scale
+  };
+
+  // Show textarea
+  textareaRef.value.value = textNode.text();
+  textareaRef.value.style.position = 'absolute';
+  textareaRef.value.style.top = areaPosition.y + 'px';
+  textareaRef.value.style.left = areaPosition.x + 'px';
+  textareaRef.value.style.width = (textNode.width() * scale) + 'px';
+  textareaRef.value.style.height = (textNode.height() * scale) + 'px';
+  textareaRef.value.style.fontSize = (textNode.fontSize() * scale) + 'px';
+  textareaRef.value.style.fontFamily = textNode.fontFamily();
+  textareaRef.value.style.color = textNode.fill();
+  textareaRef.value.style.visibility = 'visible';
+  textareaRef.value.style.padding = '5px';
+  textareaRef.value.style.margin = '0px';
+  textareaRef.value.style.overflow = 'auto';
+  textareaRef.value.style.background = '#fff8b8';
+  textareaRef.value.style.border = '1px dashed #d9d082';
+  textareaRef.value.style.outline = 'none';
+  textareaRef.value.style.resize = 'none';
+  textareaRef.value.style.boxSizing = 'border-box'; // Add this to maintain consistent sizing
+
+  // Focus textarea
+  textareaRef.value.focus();
+};
+
 
 const handleImageUpload = async (event) => {
   const file = event.target.files[0];
@@ -438,16 +770,16 @@ const handleImageUpload = async (event) => {
     };
 
     img.onerror = (error) => {
-      console.error("Ошибка загрузки изображения:", error);
-      alert("Не удалось загрузить изображение. Пожалуйста, попробуйте снова.");
+      console.error("Error downloading an image:", error);
+      alert("Try again please.");
       event.target.value = '';
     };
 
     img.src = imageUrl;
 
   } catch (error) {
-    console.error("Ошибка при загрузке файла:", error);
-    alert("Не удалось загрузить файл. Пожалуйста, попробуйте снова.");
+    console.error("Error downloading a file:", error);
+    alert("Try again please.");
     event.target.value = '';
   }
 };
@@ -472,12 +804,43 @@ const saveBoard = () => {
         height: obj.height(),
         src: obj.image().src
       };
+    } else if (obj instanceof Konva.Text) {
+      return {
+        id: obj.id(),
+        type: 'text',
+        x: obj.x(),
+        y: obj.y(),
+        text: obj.text(),
+        fontSize: obj.fontSize(),
+        fontFamily: obj.fontFamily(),
+        fill: obj.fill(),
+        width: obj.width()
+      };
+    } else if (obj instanceof Konva.Group && obj.id().includes('note-group')) {
+      // Handle note groups
+      const noteBackground = obj.findOne(node => node.id().includes('note-bg'));
+      const noteText = obj.findOne(node => node.id().includes('note-text'));
+
+      return {
+        id: obj.id(),
+        type: 'note',
+        x: obj.x(),
+        y: obj.y(),
+        width: noteBackground.width(),
+        height: noteBackground.height(),
+        text: noteText.text(),
+        fontSize: noteText.fontSize(),
+        fontFamily: noteText.fontFamily(),
+        fill: noteText.fill(),
+        backgroundColor: noteBackground.fill(),
+        borderColor: noteBackground.stroke()
+      };
     }
     return null;
   }).filter(obj => obj !== null);
 
-  console.log("Сохранение состояния доски:", serializedObjects);
-
+  console.log("Save board stage:", serializedObjects);
+  // Uncomment this when you have the updateBoard function
   // updateBoard(boardId.value, { objects: serializedObjects });
 };
 
@@ -489,7 +852,12 @@ const triggerFileInput = () => {
 
 const deleteSelectedObject = () => {
   if (selectedObject.value) {
-    selectedObject.value.destroy();
+    // If it's a group (like a note), remove it properly
+    if (selectedObject.value instanceof Konva.Group) {
+      selectedObject.value.destroy();
+    } else {
+      selectedObject.value.destroy();
+    }
 
     const index = boardObjects.value.findIndex(obj => obj === selectedObject.value);
     if (index !== -1) {
@@ -497,32 +865,42 @@ const deleteSelectedObject = () => {
     }
 
     deselectAll();
-
     mainLayerRef.value.getNode().draw();
-
     saveBoard();
   }
 };
 
+
 onMounted(() => {
-  window.addEventListener('keydown', (e) => {
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (selectedObject.value) {
-        deleteSelectedObject();
-      }
-    }
-  });
+  const transformerNode = new Konva.Transformer();
+  mainLayerRef.value.getNode().add(transformerNode);
+  transformer.value = transformerNode;
 });
 
+
 onUnmounted(() => {
-  window.removeEventListener('keydown', (e) => {
-    if (e.key === 'Delete' || e.key === 'Backspace') {
-      if (selectedObject.value) {
-        deleteSelectedObject();
-      }
-    }
-  });
-});
+  textareaRef.value.addEventListener('blur', this.handleTextareaBlur);
+})
+//
+// onMounted(() => {
+//   window.addEventListener('keydown', (e) => {
+//     if (e.key === 'Delete' || e.key === 'Backspace') {
+//       if (selectedObject.value) {
+//         deleteSelectedObject();
+//       }
+//     }
+//   });
+// });
+//
+// onUnmounted(() => {
+//   window.removeEventListener('keydown', (e) => {
+//     if (e.key === 'Delete' || e.key === 'Backspace') {
+//       if (selectedObject.value) {
+//         deleteSelectedObject();
+//       }
+//     }
+//   });
+// });
 
 defineExpose({
   saveBoard,
@@ -530,7 +908,6 @@ defineExpose({
   deleteSelectedObject
 });
 </script>
-
 <style scoped>
 .board-header h2 {
   margin-left: 16px;

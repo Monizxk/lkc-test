@@ -22,7 +22,7 @@ defineProps({
 });
 const selectTool = (tool) => {
   store.setTool(tool);
-  console.log('Выбран инструмент:', tool);
+  console.log('Select tool:', tool);
 
   if (tool === 'image') {
     emit('trigger-file-input');
