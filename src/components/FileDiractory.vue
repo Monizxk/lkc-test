@@ -3,12 +3,20 @@ import { ref, onMounted, watch, computed } from 'vue';
 import { useRouter } from 'vue-router'
 import {getBoard, insertBoard} from "@/utils/boardStotage.js";
 import { useAuthStore} from "@/api/auth.js";
+import {Project} from "@/api/index.js";
+
 
 const boards = ref([]);
 const router = useRouter()
 const folders = ref([]);
 
+const getProjects = async () => {
+  const projects = await Project.my()
+}
+
 const loadFolders = () => {
+  getProjects().then()
+
   const savedFolders = localStorage.getItem("folders");
   folders.value = savedFolders ? JSON.parse(savedFolders) : [
     // { id: 1, name: "Folder 1", description: "1 card", icon: "mdi-folder", path: "/canva" },
