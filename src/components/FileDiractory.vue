@@ -58,6 +58,7 @@ const availableIcons = [
 const createFolder = () => {
   const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
 
+  
   const newFolder = {
     id: newFolderId,
     name: `Папка ${folders.value.length + 1}`.substring(0, 50),
