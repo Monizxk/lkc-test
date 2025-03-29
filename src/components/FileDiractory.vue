@@ -12,6 +12,8 @@ const folders = ref([]);
 
 const getProjects = async () => {
   const projects = await Project.my()
+
+  console.log(projects)
 }
 
 const loadFolders = () => {
@@ -58,34 +60,42 @@ const availableIcons = [
 const createFolder = () => {
   const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
 
-  
-  const newFolder = {
-    id: newFolderId,
+  let newFolder = {
     name: `Папка ${folders.value.length + 1}`.substring(0, 50),
     description: "Новая папка".substring(0, 240),
     icon: "mdi-folder",
-    path: `/board/${newFolderId}`, // Прямой путь к доске
-    boardId: newFolderId // Используем тот же ID для доски для простоты
-  };
+  }
 
-  insertBoard(newFolder.id, {
-    id: newFolder.id,
+  Project.create({
     name: newFolder.name,
-    board: null
-  }).then()
+    description: newFolder.description,
+    content: null,
+  }).then(createdBoard => {
+    newFolder.id = createdBoard.id
+    newFolder.boardId = createdBoard.id
+    newFolder.path = `/board/${createdBoard.id}`
 
-  const board = {
-    id: newFolderId,
-    name: `Доска ${newFolderId}`,
-  };
+    insertBoard(newFolder.id, {
+      id: createdBoard.id,
+      name: createdBoard.name,
+      board: null
+    }).then()
 
-  folders.value.push(newFolder);
+    const board = {
+      id: newFolderId,
+      name: `Доска ${newFolderId}`,
+    };
 
-  editingFolder.value = newFolder;
-  editedName.value = newFolder.name;
-  editedDescription.value = newFolder.description;
-  editedIcon.value = newFolder.icon;
-  showEditDialog.value = true;
+    folders.value.push(newFolder);
+
+    editingFolder.value = newFolder;
+    editedName.value = newFolder.name;
+    editedDescription.value = newFolder.description;
+    editedIcon.value = newFolder.icon;
+    showEditDialog.value = true;
+  })
+
+
 };
 
 const startEditing = (folder) => {
@@ -103,6 +113,12 @@ const saveEdits = () => {
       folder.name = editedName.value.trim();
       folder.description = editedDescription.value.trim();
       folder.icon = editedIcon.value;
+
+      Project.update({
+        id: editingFolder.value.id,
+        name: folder.name,
+        description: folder.description,
+      }).then()
     }
 
     getBoard(editingFolder.value.id).then(board => {

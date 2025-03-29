@@ -7,7 +7,7 @@ export const my = async () => {
 }
 
 export const create = async (data) => {
-    const response = await instance.post("/projects", {
+    const response = await instance.post("/project", {
         name: data.name,
         description: data.description,
         content: data.content,
@@ -22,7 +22,22 @@ export const create = async (data) => {
 }
 
 export const update = async (data) => {
+    let payload = {}
 
+
+    if ("name" in data) {
+        payload["name"] = data["name"]
+    }
+
+    if ("description" in data) {
+        payload["description"] = data["description"]
+    }
+
+    if ("content" in data) {
+        payload["content"] = data["content"]
+    }
+
+    const response = await instance.patch(`/project/${data.id}`, payload)
 }
 
 export const remove = async (data) => {

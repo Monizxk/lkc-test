@@ -55,12 +55,15 @@ const submitForm = () => {
   User.me().then(user => {
     console.log(user);
   });
+
+  router.push('/files');
 }
 
 const callback = async (response) => {
   await Auth.google({ credential: response.credential });
   const user = await User.me();
 
+  await router.push('/files');
   console.log(user);
 }
 

@@ -881,27 +881,6 @@ onMounted(() => {
 onUnmounted(() => {
   textareaRef.value.addEventListener('blur', this.handleTextareaBlur);
 })
-//
-// onMounted(() => {
-//   window.addEventListener('keydown', (e) => {
-//     if (e.key === 'Delete' || e.key === 'Backspace') {
-//       if (selectedObject.value) {
-//         deleteSelectedObject();
-//       }
-//     }
-//   });
-// });
-//
-// onUnmounted(() => {
-//   window.removeEventListener('keydown', (e) => {
-//     if (e.key === 'Delete' || e.key === 'Backspace') {
-//       if (selectedObject.value) {
-//         deleteSelectedObject();
-//       }
-//     }
-//   });
-// });
-
 defineExpose({
   saveBoard,
   handleResize,
