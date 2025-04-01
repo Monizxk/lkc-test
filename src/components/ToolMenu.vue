@@ -60,7 +60,7 @@ const selectTool = (tool) => {
 <style scoped>
 .tool-menu {
   position: absolute;
-  top: 85px;
+  top: 56px;
   left: 0;
   height: calc(100% - 64px);
   z-index: 10;

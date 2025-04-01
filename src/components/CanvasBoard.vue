@@ -99,6 +99,7 @@ import {getBoard} from "@/utils/boardStotage.js";
 import { useDrawingStore } from "@/stores/useBoardStore.js";
 import Konva from 'konva';
 import {Image as ImageAPI} from "@/api/index.js";
+import {Project} from "@/api/index.js"
 
 const route = useRoute();
 const router = useRouter();
@@ -324,6 +325,8 @@ onUnmounted(() => {
 });
 
 const handleStageClick = (e) => {
+  console.log(81273698732469871235698)
+
   if (e.target === e.target.getStage()) {
     if (store.currentTool === 'text') {
       addTextNode(e);
@@ -840,6 +843,16 @@ const saveBoard = () => {
     }
     return null;
   }).filter(obj => obj !== null);
+
+  console.log({
+    id: boardId,
+    content: serializedObjects,
+  })
+
+  Project.update({
+    id: boardId,
+    content: serializedObjects,
+  })
 
   console.log("Save board stage:", serializedObjects);
   // Uncomment this when you have the updateBoard function
