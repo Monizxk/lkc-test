@@ -59,14 +59,14 @@ const submitForm = () => {
   });
 
   router.push('/files');
+  window.location.reload();
 }
 
 const callback = async (response) => {
   await Auth.google({ credential: response.credential });
-  const user = await User.me();
 
   await router.push('/files');
-  console.log(user);
+  window.location.reload();
 }
 
 </script>
@@ -76,17 +76,16 @@ const callback = async (response) => {
       height="100vh"
       src="https://images.pexels.com/photos/3587347/pexels-photo-3587347.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
   >
-    <v-container class="d-flex fill-height justify-center align-center rounded-xs">
-      <v-card class="pa-6" max-width="500" elevation="10" style="background: rgba(255, 255, 255, 0.9);
-width: 400px; height: 600px; border-radius: 20px; overflow: hidden;">
-        <v-toolbar color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
+    <v-container class="d-flex fill-height justify-center align-center">
+      <v-card class="pa-6 max-w-[500px] w-[400px] rounded-xl elevation-10 !bg-[#ffffffff] backdrop-blur-[10px]">
+        <v-toolbar class="rounded-lg" color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
           <v-card-title class="text-h6 font-weight-regular">
             Register
           </v-card-title>
         </v-toolbar>
 
 
-        <v-form ref="form" v-model="isValid" class="pa-4">
+        <v-form ref="form" v-model="isValid" class="pa-4 pb-0">
           <v-text-field
               v-model="name"
               :rules="[rules.name, rules.length(6)]"
@@ -120,18 +119,19 @@ width: 400px; height: 600px; border-radius: 20px; overflow: hidden;">
           >
             <template v-slot:label>
               <div class="checkbox-label">
-              I agree to the
-              <a href="#" @click.stop.prevent="dialog = true">Terms of Service</a> and
-              <a href="#" @click.stop.prevent="dialog = true">Privacy Policy</a>*
+                I agree to the
+                <a href="#" @click.stop.prevent="dialog = true">Terms of Service</a> and
+                <a href="#" @click.stop.prevent="dialog = true">Privacy Policy</a>*
               </div>
             </template>
           </v-checkbox>
         </v-form>
 
-        <v-divider></v-divider>
-<!--        <div id="google-signin-btn" class="d-flex justify-center my-4"></div>-->
+        <v-divider>or</v-divider>
 
-        <GoogleLogin :callback="callback" />
+        <div class="flex justify-center w-full py-2">
+          <GoogleLogin :callback="callback"/>
+        </div>
 
         <v-card-actions>
           <v-btn variant="text" @click="goToSignUp">Sign Up</v-btn>

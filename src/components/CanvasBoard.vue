@@ -1,5 +1,6 @@
 <template>
   <v-card
+      v-if="false"
       class="mx-auto"
   >
     <v-card-item style="background-color: #9FA8DA;">
@@ -45,7 +46,8 @@
         </div>
       </div>
     </v-card-item>
-  </v-card>
+  </v-card> <!-- DELETE IT!!! -->
+
   <input
       type="file"
       ref="fileInputRef"

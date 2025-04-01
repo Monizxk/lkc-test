@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue';
+import {ref, onMounted, watch, computed, reactive} from 'vue';
 import { useRouter } from 'vue-router'
 import {getBoard, insertBoard} from "@/utils/boardStotage.js";
 import { useAuthStore} from "@/api/auth.js";
@@ -30,7 +30,7 @@ const saveFolders = () => {
   localStorage.setItem("folders", JSON.stringify(folders.value));
 };
 
-onMounted(loadFolders);
+// onMounted(loadFolders);
 
 watch(folders, saveFolders, {deep: true});
 
@@ -38,9 +38,43 @@ const editingFolder = ref(null);
 const editedName = ref("");
 const editedDescription = ref("");
 const editedIcon = ref("");
-const showEditDialog = ref(false);
+// const showEditDialog = ref(false);
 const showDeleteDialog = ref(false);
 const folderToDelete = ref(null);
+
+// ==================================================================
+
+const currentUser = ref(null);
+const projectsFetched = ref(false);
+const projects = reactive([])
+
+const fieldsRules = {
+  name: [
+    v => !!v?.trim() || 'Назва не може бути порожньою',
+    v => v.length <= 64 || 'Назва не може бути довшою за 64 символа'
+  ],
+  description: [
+      v => !v || v.length <= 255 || 'Опис не може бути довшим за 255 символів'
+  ]
+}
+
+const showCreateDialog = ref(false);
+const createDialogValid = ref(false);
+const createDialogWaiting = ref(false);
+const createDialogErrorMessage = ref("");
+
+const createInitialData = {name: "", description: null};
+const createData = reactive({...createInitialData});
+
+const showEditDialog = ref(false);
+const editDialogValid = ref(false);
+const editDialogWaiting = ref(false);
+const editDialogErrorMessage = ref("");
+
+const editId = ref(null);
+const editData = ref({});
+
+// ==================================================================
 
 const isFormValid = computed(() => {
   return editedName.value.trim().length > 0 &&
@@ -57,46 +91,135 @@ const availableIcons = [
   { text: "Завантаження", value: "mdi-download" }
 ];
 
-const createFolder = () => {
-  const newFolderId = folders.value.length ? Math.max(...folders.value.map(f => f.id)) + 1 : 1;
+// ==================================================================
 
-  let newFolder = {
-    name: `Папка ${folders.value.length + 1}`.substring(0, 50),
-    description: "Новая папка".substring(0, 240),
-    icon: "mdi-folder",
+const loadProjects = async () => {
+  projectsFetched.value = false
+  projects.length = 0
+
+  const userProjects = await Project.my()
+
+  userProjects.map(project => {
+    projects.push({
+      id: project.id,
+      name: project.name,
+      description: project.description,
+    });
+  });
+
+  projects.sort((a, b) => a?.id - b?.id)
+  projectsFetched.value = true
+}
+
+onMounted(() => {
+  loadProjects()
+})
+
+const createProject = () => {
+  showCreateDialog.value = true;
+};
+
+const createDialogValidate = () => {
+  createDialogValid.value = Object.entries(createData).map(([name, value]) => (
+      fieldsRules[name].map((rule) => (
+          rule(value)
+      ))
+  )).flat().every(rule => rule === true)
+}
+
+const cancelCreating = async () => {
+  showCreateDialog.value = false
+}
+
+const submitCreate = async () => {
+  let data = {
+    name: createData.name,
   }
 
-  Project.create({
-    name: newFolder.name,
-    description: newFolder.description,
-    content: null,
-  }).then(createdBoard => {
-    newFolder.id = createdBoard.id
-    newFolder.boardId = createdBoard.id
-    newFolder.path = `/board/${createdBoard.id}`
+  if (createData.description) {
+    data.description = createData.description;
+  }
 
-    insertBoard(newFolder.id, {
-      id: createdBoard.id,
-      name: createdBoard.name,
-      board: null
-    }).then()
+  createDialogWaiting.value = true;
+  createDialogErrorMessage.value = ""
 
-    const board = {
-      id: newFolderId,
-      name: `Доска ${newFolderId}`,
-    };
+  let createdProject;
 
-    folders.value.push(newFolder);
+  try {
+    createdProject = await Project.create(data)
+  } catch (error) {
+    createDialogErrorMessage.value = error.message;
+    return;
+  } finally {
+    createDialogWaiting.value = false;
+  }
 
-    editingFolder.value = newFolder;
-    editedName.value = newFolder.name;
-    editedDescription.value = newFolder.description;
-    editedIcon.value = newFolder.icon;
-    showEditDialog.value = true;
-  })
+  Object.assign(createData, createInitialData);
 
+  const project = {
+    name: createdProject.name,
+    description: createdProject.description,
+  }
 
-};
+  boards.value.push(project);
+
+  createDialogValidate()
+  showCreateDialog.value = false;
+}
+
+const editProject = (project) => {
+  editId.value = project.id;
+  editData.value = {...project};
+  delete editData.value.id;
+  showEditDialog.value = true;
+}
+
+const editDialogValidate = () => {
+  editDialogValid.value = Object.entries(editData.value).map(([name, value]) => (
+      fieldsRules[name].map((rule) => (
+          rule(value)
+      ))
+  )).flat().every(rule => rule === true)
+}
+
+const cancelEditing = () => {
+  editId.value = null;
+  editData.value = {};
+  editDialogValid.value = false;
+  showEditDialog.value = false;
+}
+
+const submitEdit = async () => {
+  let data = {
+    id: editId.value,
+    name: editData.value.name,
+  }
+
+  if (editData.value.description) {
+    data.description = editData.value.description;
+  }
+
+  editDialogWaiting.value = true;
+  editDialogErrorMessage.value = ""
+
+  try {
+    await Project.update(data)
+  } catch (error) {
+    editDialogErrorMessage.value = error.message;
+    return;
+  } finally {
+    editDialogWaiting.value = false;
+  }
+
+  editData.value = {}
+
+  editDialogValidate()
+  showEditDialog.value = false;
+
+  await loadProjects()
+}
+
+// ==================================================================
 
 const startEditing = (folder) => {
   editingFolder.value = folder;
@@ -132,10 +255,10 @@ const saveEdits = () => {
   }
 };
 
-const cancelEditing = () => {
-  editingFolder.value = null;
-  showEditDialog.value = false;
-};
+// const cancelEditing = () => {
+//   editingFolder.value = null;
+//   showEditDialog.value = false;
+// };
 
 const confirmDelete = (folder) => {
   folderToDelete.value = folder;
@@ -186,9 +309,7 @@ const goToHelp = () => router.push('/help')
 </script>
 
 <template>
-  <v-card
-      class="mx-auto"
-  >
+  <v-card v-if="false" class="mx-auto">
     <v-card-item style="background-color: #9FA8DA;">
       <div class="d-flex align-center justify-space-between">
         <v-card-title>
@@ -235,9 +356,7 @@ const goToHelp = () => router.push('/help')
     </v-card-item>
   </v-card>
 
-  <v-card
-      class="mx-auto"
-  >
+  <v-card class="mx-auto">
     <v-card-item style="background-color: #E8EAF6;">
       <div class="d-flex align-center justify-center">
         <v-btn
@@ -247,7 +366,7 @@ const goToHelp = () => router.push('/help')
             min-width="92"
             variant="outlined"
             rounded
-            @click="createFolder"
+            @click="createProject"
         >
           Create
         </v-btn>
@@ -256,6 +375,52 @@ const goToHelp = () => router.push('/help')
   </v-card>
 
   <v-container>
+    <div class="d-flex justify-center w-full">
+      <v-progress-circular
+          color="primary"
+          indeterminate
+          :size="53"
+          :width="6"
+          v-if="!projectsFetched"
+      ></v-progress-circular>
+    </div>
+
+    <v-row v-if="projectsFetched">
+      <v-col
+          v-for="project in projects"
+          :key="project.id"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+      >
+        <div class="folder-wrapper">
+          <router-link
+              :to="'/board/' + project.id"
+              class="folder"
+          >
+            <div class="folder-content">
+              <v-icon size="40">mdi-folder</v-icon>
+              <div class="text">
+                <h3>{{ project.name }}</h3>
+                <p>{{ project.description }}</p>
+              </div>
+            </div>
+          </router-link>
+          <div class="folder-actions">
+            <v-btn icon small @click="editProject(project)">
+              <v-icon>mdi-pencil</v-icon>
+            </v-btn>
+            <v-btn icon small @click="confirmDelete(project)">
+              <v-icon>mdi-delete</v-icon>
+            </v-btn>
+          </div>
+        </div>
+      </v-col>
+    </v-row>
+  </v-container>
+
+  <v-container v-if="false">
     <v-row>
       <v-col
           v-for="folder in folders"
@@ -291,39 +456,134 @@ const goToHelp = () => router.push('/help')
     </v-row>
   </v-container>
 
-  <!-- Edit Dialog -->
-  <v-dialog v-model="showEditDialog" max-width="500px">
+  <!-- Create Dialog -->
+  <v-dialog v-model="showCreateDialog" max-width="500px">
     <v-card>
-      <v-card-title>Редагувати папку</v-card-title>
-      <v-card-text>
+      <v-card-title>Створити проєкт</v-card-title>
+      <v-card-text class="d-flex justify-center" v-if="createDialogWaiting">
+        <v-progress-circular
+            color="primary"
+            indeterminate
+            :size="53"
+            :width="6"
+        ></v-progress-circular>
+      </v-card-text>
+
+      <v-card-text v-if="!createDialogWaiting">
+        <v-alert
+            v-if="createDialogErrorMessage"
+            class="mb-6"
+            closable
+            type="error"
+            variant="outlined"
+            :text="createDialogErrorMessage"
+            @update:modelValue="createDialogErrorMessage = ''"
+        />
+
         <v-text-field
-            v-model="editedName"
-            label="Назва папки"
+            @input="createDialogValidate"
+            v-model="createData.name"
+            label="Назва проєкту"
             dense
-            :counter="50"
-            :rules="[v => !!v.trim() || 'Назва не може бути порожньою', v => v.length <= 50 || 'Назва не може бути довшою за 50 символів']"
-        ></v-text-field>
+            :counter="64"
+            :rules="fieldsRules.name"
+        />
+
         <v-text-field
-            v-model="editedDescription"
+            @input="createDialogValidate"
+            v-model="createData.description"
             label="Опис"
             dense
-            :counter="240"
-            :rules="[v => v.length <= 240 || 'Назва не може бути довшою за 50 символів']"
-        ></v-text-field>
-        <v-select
-            v-model="editedIcon"
-            :items="availableIcons"
-            label="Іконка"
-            dense
-        ></v-select>
+            :counter="255"
+            :rules="fieldsRules.description"
+        />
       </v-card-text>
+
       <v-card-actions>
-        <v-spacer></v-spacer>
-        <v-btn text @click="cancelEditing">Скасувати</v-btn>
-        <v-btn color="primary" :disabled="!isFormValid" text @click="saveEdits">Зберегти</v-btn>
+        <v-btn @click="cancelCreating">Скасувати</v-btn>
+        <v-btn @click="submitCreate" :disabled="!createDialogValid" color="primary">Створити</v-btn>
       </v-card-actions>
     </v-card>
   </v-dialog>
+
+  <!-- Edit Dialog -->
+  <v-dialog v-model="showEditDialog" max-width="500px" @update:model-value="cancelEditing()">
+    <v-card>
+      <v-card-title>Редагувати проєкт</v-card-title>
+      <v-card-text class="d-flex justify-center" v-if="editDialogWaiting">
+        <v-progress-circular
+            color="primary"
+            indeterminate
+            :size="53"
+            :width="6"
+        ></v-progress-circular>
+      </v-card-text>
+
+      <v-card-text v-if="!editDialogWaiting">
+        <v-alert
+            v-if="editDialogErrorMessage"
+            class="mb-6"
+            closable
+            type="error"
+            variant="outlined"
+            :text="editDialogErrorMessage"
+            @update:modelValue="editDialogErrorMessage = ''"
+        />
+
+        <v-text-field
+            @input="editDialogValidate"
+            v-model="editData.name"
+            label="Назва проєкту"
+            dense
+            :counter="64"
+            :rules="fieldsRules.name"
+        />
+
+        <v-text-field
+            @input="editDialogValidate"
+            v-model="editData.description"
+            label="Опис"
+            dense
+            :counter="255"
+            :rules="fieldsRules.description"
+        />
+      </v-card-text>
+
+      <v-card-actions>
+        <v-btn @click="cancelEditing">Скасувати</v-btn>
+        <v-btn @click="submitEdit" :disabled="!editDialogValid" color="primary">Зберегти</v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-dialog>
+
+  <!-- Edit Dialog -->
+<!--  <v-dialog v-model="false" max-width="500px">-->
+<!--    <v-card>-->
+<!--      <v-card-title>Редагувати проєкт</v-card-title>-->
+<!--      <v-card-text>-->
+<!--        <v-text-field-->
+<!--            v-model="editData.name"-->
+<!--            label="Назва проєкту"-->
+<!--            dense-->
+<!--            :counter="64"-->
+<!--            :rules="fieldsRules.name"-->
+<!--        ></v-text-field>-->
+
+<!--        <v-text-field-->
+<!--            v-model="editData.description"-->
+<!--            label="Опис"-->
+<!--            dense-->
+<!--            :counter="255"-->
+<!--            :rules="fieldsRules.description"-->
+<!--        ></v-text-field>-->
+<!--      </v-card-text>-->
+
+<!--      <v-card-actions>-->
+<!--        <v-btn @click="cancelEditing">Скасувати</v-btn>-->
+<!--        <v-btn @click="submitEdit" :disabled="!editDialogValid" color="primary">Зберегти</v-btn>-->
+<!--      </v-card-actions>-->
+<!--    </v-card>-->
+<!--  </v-dialog>-->
 
   <!-- Delete Confirmation Dialog -->
   <v-dialog v-model="showDeleteDialog" max-width="400px">

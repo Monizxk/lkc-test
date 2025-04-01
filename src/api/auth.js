@@ -22,6 +22,12 @@ export const google = async (data) => {
     })
 }
 
+export const logout = async () => {
+    return await instance.post("/auth/logout")
+}
+
+
+// ???????????????????????????
 export const useAuthStore = defineStore('auth', {
     state: () => ({
         user: null,

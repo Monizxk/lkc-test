@@ -52,19 +52,15 @@ const submitForm = () => {
     password: password.value
   })
 
-  User.me().then(user => {
-    console.log(user);
-  });
-
   router.push('/files');
+  window.location.reload();
 }
 
 const callback = async (response) => {
   await Auth.google({ credential: response.credential });
-  const user = await User.me();
 
   await router.push('/files');
-  console.log(user);
+  window.location.reload();
 }
 
 </script>
@@ -75,6 +71,7 @@ const callback = async (response) => {
       src="https://images.pexels.com/photos/3587347/pexels-photo-3587347.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
   >
     <v-card
+        v-if="false"
         class="mx-auto"
     >
       <v-card-item style="background-color: #3949AB;">
@@ -84,30 +81,19 @@ const callback = async (response) => {
           </v-card-title>
         </div>
       </v-card-item>
-    </v-card>
+    </v-card> <!-- DELETE IT -->
 
     <v-container
         class="d-flex fill-height justify-center align-center"
     >
-      <v-card class="pa-6" max-width="500" elevation="10" style="background: rgba(255, 255, 255, 0.9);
-width: 400px; height: 450px; border-radius: 20px; overflow: hidden;">
-        <v-toolbar color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
+      <v-card class="pa-6 max-w-[500px] w-[400px] rounded-xl elevation-10 !bg-[#ffffffff] backdrop-blur-[10px]">
+        <v-toolbar class="rounded-lg" color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
           <v-card-title class="text-h6 font-weight-regular">
             Sign up
           </v-card-title>
         </v-toolbar>
 
-
-        <v-form ref="form" v-model="isValid" class="pa-4">
-<!--          <v-text-field-->
-<!--              v-model="login"-->
-<!--              :rules="[rules.login, rules.length(6)]"-->
-<!--              color="deep-purple"-->
-<!--              counter="6"-->
-<!--              label="Emai"-->
-<!--              type="text"-->
-<!--              variant="filled"-->
-<!--          ></v-text-field>-->
+        <v-form ref="form" v-model="isValid" class="pa-4 pb-0">
           <v-text-field
               v-model="email"
               :rules="[rules.email]"
@@ -115,7 +101,7 @@ width: 400px; height: 450px; border-radius: 20px; overflow: hidden;">
               label="Email address"
               type="email"
               variant="filled"
-          ></v-text-field>
+          />
           <v-text-field
               v-model="password"
               :rules="[rules.password, rules.length(6)]"
@@ -124,24 +110,14 @@ width: 400px; height: 450px; border-radius: 20px; overflow: hidden;">
               label="Password"
               type="password"
               variant="filled"
-          ></v-text-field>
-<!--          <v-checkbox-->
-<!--              v-model="agreement"-->
-<!--              :rules="[rules.required]"-->
-<!--              color="deep-purple"-->
-<!--          >-->
-<!--            <template v-slot:label>-->
-<!--              I agree to the&nbsp;-->
-<!--              <a href="#" @click.stop.prevent="dialog = true">Terms of Service</a>-->
-<!--              &nbsp;and&nbsp;-->
-<!--              <a href="#" @click.stop.prevent="dialog = true">Privacy Policy</a>*-->
-<!--            </template>-->
-<!--          </v-checkbox>-->
+          />
         </v-form>
 
-        <v-divider></v-divider>
-<!--        <div id="google-signin-btn" class="d-flex justify-center my-4"></div>-->
-        <GoogleLogin :callback="callback" />
+        <v-divider>or</v-divider>
+
+        <div class="flex justify-center w-full py-2">
+          <GoogleLogin :callback="callback"/>
+        </div>
 
         <v-card-actions>
           <v-btn variant="text" @click="goToRegister">Register</v-btn>

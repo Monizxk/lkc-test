@@ -1,6 +1,7 @@
 
 <template>
   <v-card
+      v-if="false"
       class="mx-auto"
   >
     <v-card-item style="background-color: #C5CAE9;">
@@ -189,6 +190,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import {VParallax} from "vuetify/components";
 
 const router = useRouter()
 const activeTab = ref('recent')

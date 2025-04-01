@@ -24,7 +24,6 @@ export const create = async (data) => {
 export const update = async (data) => {
     let payload = {}
 
-
     if ("name" in data) {
         payload["name"] = data["name"]
     }

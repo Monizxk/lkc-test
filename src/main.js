@@ -7,6 +7,7 @@ import { registerPlugins } from '@/plugins';
 import VueKonva from 'vue-konva';
 import router from './router';
 import vue3GoogleLogin from 'vue3-google-login'
+import "./style.css"
 
 
 // Create Vue app
@@ -23,7 +24,6 @@ app.use(router);
 app.use(pinia)
 
 app.use(vue3GoogleLogin, {clientId: '509878879845-pck882gn0mhtga5daip5amvb4jgaq9mt.apps.googleusercontent.com'})
-
 
 // Mount the app
 app.mount('#app');

@@ -3,7 +3,7 @@
 </script>
 
 <template>
-    <v-card class="mx-auto mb-4">
+    <v-card class="mx-auto mb-4" v-if="false">
       <v-card-item style="background-color: #9FA8DA;">
         <div class="d-flex align-center justify-space-between">
           <v-card-title>
@@ -11,7 +11,7 @@
           </v-card-title>
         </div>
       </v-card-item>
-    </v-card>
+    </v-card> <!-- DELETE IT!!! -->
     <v-container>
       <v-container>
         <v-row justify="center">
@@ -29,6 +29,11 @@
           <v-col cols="12" md="10" lg="8">
             <h2 class="text-h4">Third...</h2>
             <p>Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+          </v-col>
+          <v-col cols="12" md="10" lg="8">
+            <h2 class="text-h4">І саме головне...</h2>
+            <p>Пару кліків і все готово!</p>
+            <img src="https://i.pinimg.com/736x/7b/92/6a/7b926a14ce9e97bfd3315c9f6a309ace.jpg" height="480">
           </v-col>
         </v-row>
       </v-container>
