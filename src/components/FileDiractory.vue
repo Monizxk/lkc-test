@@ -157,11 +157,12 @@ const submitCreate = async () => {
   Object.assign(createData, createInitialData);
 
   const project = {
+    id: createdProject.id,
     name: createdProject.name,
     description: createdProject.description,
   }
 
-  boards.value.push(project);
+  projects.push(project);
 
   createDialogValidate()
   showCreateDialog.value = false;

@@ -6,6 +6,12 @@ export const my = async () => {
     return response.data
 }
 
+export const get = async (data) => {
+    const response = await instance.get(`/project/${data.id}`)
+
+    return response.data
+}
+
 export const create = async (data) => {
     const response = await instance.post("/project", {
         name: data.name,

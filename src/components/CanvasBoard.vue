@@ -147,8 +147,14 @@ const handleResize = () => {
 };
 
 const onStartup = async () => {
-  const board = await getBoard(boardId.value);
-  boardName.value = board.name;
+  // const board = await getBoard(boardId.value);
+  // boardName.value = board.name;
+
+  let board = {};
+
+  board.objects = (await Project.get({id: boardId.value})).content
+
+  console.log(board)
 
   if (board.objects && board.objects.length > 0) {
     loadSavedObjects(board.objects);
@@ -845,16 +851,20 @@ const saveBoard = () => {
   }).filter(obj => obj !== null);
 
   console.log({
-    id: boardId,
+    id: boardId.value,
     content: serializedObjects,
   })
 
   Project.update({
-    id: boardId,
+    id: boardId.value,
     content: serializedObjects,
   })
 
-  console.log("Save board stage:", serializedObjects);
+  console.log(JSON.stringify({
+    id: boardId.value,
+    content: serializedObjects,
+  }))
+
   // Uncomment this when you have the updateBoard function
   // updateBoard(boardId.value, { objects: serializedObjects });
 };
@@ -886,10 +896,22 @@ const deleteSelectedObject = () => {
 };
 
 
+const fetchBoard = async () => {
+  const board = await Project.get({id: boardId.value});
+
+  if (board.content !== null) {
+    boardObjects.value = board.content;
+    console.log(boardObjects.value);
+  }
+}
+
+
 onMounted(() => {
   const transformerNode = new Konva.Transformer();
   mainLayerRef.value.getNode().add(transformerNode);
   transformer.value = transformerNode;
+
+  fetchBoard()
 });
 
 
