@@ -76,16 +76,15 @@ const callback = async (response) => {
       height="100vh"
       src="https://images.pexels.com/photos/3587347/pexels-photo-3587347.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
   >
-    <v-container class="d-flex fill-height justify-center align-center">
-      <v-card class="pa-6 max-w-[500px] w-[400px] rounded-xl elevation-10 !bg-[#ffffffff] backdrop-blur-[10px]">
-        <v-toolbar class="rounded-lg" color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
+    <v-container class="register-container">
+      <v-card class="register-card">
+        <v-toolbar class="register-toolbar" color="indigo-lighten-1" dark flat>
           <v-card-title class="text-h6 font-weight-regular">
             Register
           </v-card-title>
         </v-toolbar>
 
-
-        <v-form ref="form" v-model="isValid" class="pa-4 pb-0">
+        <v-form ref="form" v-model="isValid" class="form-content">
           <v-text-field
               v-model="name"
               :rules="[rules.name, rules.length(6)]"
@@ -94,7 +93,7 @@ const callback = async (response) => {
               label="Name"
               type="text"
               variant="filled"
-          ></v-text-field>
+          />
           <v-text-field
               v-model="password"
               :rules="[rules.password, rules.length(6)]"
@@ -103,20 +102,16 @@ const callback = async (response) => {
               label="Password"
               type="password"
               variant="filled"
-          ></v-text-field>
-                    <v-text-field
-                        v-model="email"
-                        :rules="[rules.email]"
-                        color="deep-purple"
-                        label="Email address"
-                        type="email"
-                        variant="filled"
-                    ></v-text-field>
-          <v-checkbox
-              v-model="agreement"
-              :rules="[rules.required]"
+          />
+          <v-text-field
+              v-model="email"
+              :rules="[rules.email]"
               color="deep-purple"
-          >
+              label="Email address"
+              type="email"
+              variant="filled"
+          />
+          <v-checkbox v-model="agreement" :rules="[rules.required]" color="deep-purple">
             <template v-slot:label>
               <div class="checkbox-label">
                 I agree to the
@@ -129,8 +124,8 @@ const callback = async (response) => {
 
         <v-divider>or</v-divider>
 
-        <div class="flex justify-center w-full py-2">
-          <GoogleLogin :callback="callback"/>
+        <div class="google-login-container">
+          <GoogleLogin :callback="callback" />
         </div>
 
         <v-card-actions>
@@ -155,5 +150,43 @@ const callback = async (response) => {
   display: flex;
   align-items: center;
   justify-content: flex-start;
+}
+
+.register-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.register-card {
+  padding: 24px;
+  width: 400px;
+  max-width: 500px;
+  border-radius: 16px;
+  box-shadow: var(--v-theme-shadow-10);
+  background-color: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(10px);
+}
+
+.register-toolbar {
+  border-radius: 12px;
+  background-color: #5C6BC0 !important;
+}
+
+.form-content {
+  padding: 16px 16px 0 16px;
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0;
+}
+
+.checkbox-label {
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 </style>

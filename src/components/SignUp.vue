@@ -70,72 +70,87 @@ const callback = async (response) => {
       height="100vh"
       src="https://images.pexels.com/photos/3587347/pexels-photo-3587347.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
   >
-    <v-card
-        v-if="false"
-        class="mx-auto"
-    >
-      <v-card-item style="background-color: #3949AB;">
-        <div class="d-flex align-center justify-space-between">
-          <v-card-title>
-            LKC
-          </v-card-title>
-        </div>
-      </v-card-item>
-    </v-card> <!-- DELETE IT -->
+    <v-container class="signup-container">
+    <v-card class="signup-card">
+      <v-toolbar class="signup-toolbar" color="indigo-lighten-1" dark flat>
+        <v-card-title class="text-h6 font-weight-regular">
+          Sign up
+        </v-card-title>
+      </v-toolbar>
 
-    <v-container
-        class="d-flex fill-height justify-center align-center"
-    >
-      <v-card class="pa-6 max-w-[500px] w-[400px] rounded-xl elevation-10 !bg-[#ffffffff] backdrop-blur-[10px]">
-        <v-toolbar class="rounded-lg" color="indigo-lighten-1" dark flat style="background-color: #5C6BC0;">
-          <v-card-title class="text-h6 font-weight-regular">
-            Sign up
-          </v-card-title>
-        </v-toolbar>
+      <v-form ref="form" v-model="isValid" class="form-content">
+        <v-text-field
+            v-model="email"
+            :rules="[rules.email]"
+            color="deep-purple"
+            label="Email address"
+            type="email"
+            variant="filled"
+        />
+        <v-text-field
+            v-model="password"
+            :rules="[rules.password, rules.length(6)]"
+            color="deep-purple"
+            counter="6"
+            label="Password"
+            type="password"
+            variant="filled"
+        />
+      </v-form>
 
-        <v-form ref="form" v-model="isValid" class="pa-4 pb-0">
-          <v-text-field
-              v-model="email"
-              :rules="[rules.email]"
-              color="deep-purple"
-              label="Email address"
-              type="email"
-              variant="filled"
-          />
-          <v-text-field
-              v-model="password"
-              :rules="[rules.password, rules.length(6)]"
-              color="deep-purple"
-              counter="6"
-              label="Password"
-              type="password"
-              variant="filled"
-          />
-        </v-form>
+      <v-divider>or</v-divider>
 
-        <v-divider>or</v-divider>
+      <div class="google-login-container">
+        <GoogleLogin :callback="callback" />
+      </div>
 
-        <div class="flex justify-center w-full py-2">
-          <GoogleLogin :callback="callback"/>
-        </div>
-
-        <v-card-actions>
-          <v-btn variant="text" @click="goToRegister">Register</v-btn>
-          <v-spacer></v-spacer>
-          <v-btn
-              :loading="isLoading"
-              color="deep-purple-accent-4"
-              @click="submitForm"
-          >
-            Submit
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-container>
+      <v-card-actions>
+        <v-btn variant="text" @click="goToRegister">Register</v-btn>
+        <v-spacer></v-spacer>
+        <v-btn
+            :loading="isLoading"
+            color="deep-purple-accent-4"
+            @click="submitForm"
+        >
+          Submit
+        </v-btn>
+      </v-card-actions>
+    </v-card>
+  </v-container>
   </v-parallax>
 </template>
 
 
 <style scoped>
+.signup-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
 
+.signup-card {
+  padding: 24px;
+  width: 400px;
+  max-width: 500px;
+  border-radius: 16px;
+  background-color: rgba(255, 255, 255, 1);
+  backdrop-filter: blur(10px);
+}
+
+.signup-toolbar {
+  border-radius: 12px;
+  background-color: #5C6BC0 !important;
+}
+
+.form-content {
+  padding: 16px 16px 0 16px;
+}
+
+.google-login-container {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0;
+}
 </style>
