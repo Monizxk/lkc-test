@@ -54,6 +54,7 @@ const goToRegister = () => router.push('/register')
 <!--          <p>{{ currentUser.name }}</p>-->
 
           <v-btn
+              variant="plain"
               class="help-btn"
               @click="goToHelp"
               icon="mdi-help-circle"

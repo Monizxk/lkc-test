@@ -50,10 +50,10 @@ const submitForm = () => {
   Auth.login({
     email: email.value,
     password: password.value
+  }).then(() => {
+    router.push('/files');
+    setTimeout(() => {window.location.reload()}, 100)
   })
-
-  router.push('/files');
-  window.location.reload();
 }
 
 const callback = async (response) => {

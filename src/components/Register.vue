@@ -47,19 +47,28 @@ const rules = {
 
 const goToSignUp = () => router.push('/signup')
 
-const submitForm = () => {
-  Auth.register({
+const registerChain = async () => {
+  await Auth.register({
     name: name.value,
     email: email.value,
     password: password.value
   })
 
-  User.me().then(user => {
-    console.log(user);
-  });
+  await Auth.login({
+    email: email.value,
+    password: password.value
+  })
 
-  router.push('/files');
-  window.location.reload();
+  await User.me().then(user => {
+    console.log(user);
+  })
+
+  await router.push('/files')
+  setTimeout(() => {window.location.reload()}, 100)
+}
+
+const submitForm = () => {
+  registerChain()
 }
 
 const callback = async (response) => {
