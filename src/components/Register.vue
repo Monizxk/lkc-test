@@ -1,11 +1,11 @@
 <script setup>
-
-import {ref, onMounted} from 'vue'
-import {VParallax} from 'vuetify/components'
-import {useRouter} from 'vue-router'
-import {Auth, User} from "@/api/index.js";
-import axios from "axios";
-import {GoogleLogin} from "vue3-google-login";
+import { ref, onMounted } from 'vue'
+import { VParallax } from 'vuetify/components'
+import { useRouter } from 'vue-router'
+import { Auth, User } from "@/api/index.js"
+import axios from "axios"
+import { GoogleLogin } from "vue3-google-login"
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const agreement = ref(false)
@@ -31,7 +31,7 @@ onMounted(() => {
   })
   window.google.accounts.id.renderButton(
       document.getElementById("google-signin-btn"),
-      {theme: "outline", size: "large"} //style
+      { theme: "outline", size: "large" } //style
   )
 })
 
@@ -45,40 +45,94 @@ const rules = {
   required: v => !!v || 'This field is required',
 }
 
-const goToSignUp = () => router.push('/signup')
+const goToLogin = () => router.push('/login')
 
 const registerChain = async () => {
-  await Auth.register({
-    name: name.value,
-    email: email.value,
-    password: password.value
-  })
+  try {
+    isLoading.value = true
 
-  await Auth.login({
-    email: email.value,
-    password: password.value
-  })
+    // First register the user
+    await Auth.register({
+      name: name.value,
+      email: email.value,
+      password: password.value
+    })
 
-  await User.me().then(user => {
-    console.log(user);
-  })
+    // Then login with the same credentials
+    await Auth.login({
+      email: email.value,
+      password: password.value
+    })
 
-  await router.push('/files')
-  setTimeout(() => {window.location.reload()}, 100)
+    // Get user info
+    await User.me().then(user => {
+      console.log(user)
+    })
+
+    // Show success message
+    await Swal.fire({
+      icon: 'success',
+      title: 'Registration Successful!',
+      text: 'Welcome to our platform!',
+      timer: 2000,
+      showConfirmButton: false
+    })
+
+    // Redirect to files page
+    await router.push('/files')
+    setTimeout(() => {window.location.reload()}, 100)
+
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Registration Failed',
+      text: error.message || 'An error occurred during registration. Please try again.',
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const submitForm = () => {
-  registerChain()
+  if (isValid.value) {
+    registerChain()
+  } else {
+    Swal.fire({
+      icon: 'warning',
+      title: 'Invalid Form',
+      text: 'Please fill out all required fields correctly.',
+    })
+  }
 }
 
 const callback = async (response) => {
-  await Auth.google({ credential: response.credential });
+  try {
+    isLoading.value = true
+    await Auth.google({ credential: response.credential })
 
-  await router.push('/files');
-  window.location.reload();
+    await Swal.fire({
+      icon: 'success',
+      title: 'Google Registration Successful!',
+      text: 'Welcome to our platform!',
+      timer: 2000,
+      showConfirmButton: false
+    })
+
+    await router.push('/files')
+    window.location.reload()
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Google Registration Failed',
+      text: error.message || 'Failed to register with Google. Please try again.',
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 </script>
+
 
 <template>
   <v-parallax

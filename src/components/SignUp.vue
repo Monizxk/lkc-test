@@ -1,10 +1,10 @@
 <script setup>
-
 import { ref, onMounted } from 'vue'
 import { VParallax } from 'vuetify/components'
 import { useRouter } from 'vue-router'
-import {Auth, User} from "@/api/index.js";
-import {GoogleLogin} from "vue3-google-login";
+import { Auth, User } from "@/api/index.js"
+import { GoogleLogin } from "vue3-google-login"
+import Swal from 'sweetalert2'
 
 const router = useRouter()
 const agreement = ref(false)
@@ -47,20 +47,57 @@ const rules = {
 const goToRegister = () => router.push('/register')
 
 const submitForm = () => {
+  isLoading.value = true
+
   Auth.login({
     email: email.value,
     password: password.value
   }).then(() => {
-    router.push('/files');
-    setTimeout(() => {window.location.reload()}, 100)
+    Swal.fire({
+      icon: 'success',
+      title: 'Login Successful!',
+      text: 'Welcome back!',
+      timer: 2000,
+      showConfirmButton: false
+    }).then(() => {
+      router.push('/files');
+      setTimeout(() => {window.location.reload()}, 100)
+    })
+  }).catch(error => {
+    Swal.fire({
+      icon: 'error',
+      title: 'Login Failed',
+      text: error.message || 'Invalid email or password. Please try again.',
+    })
+  }).finally(() => {
+    isLoading.value = false
   })
 }
 
 const callback = async (response) => {
-  await Auth.google({ credential: response.credential });
+  try {
+    isLoading.value = true
+    await Auth.google({ credential: response.credential });
 
-  await router.push('/files');
-  window.location.reload();
+    Swal.fire({
+      icon: 'success',
+      title: 'Google Login Successful!',
+      text: 'Welcome back!',
+      timer: 2000,
+      showConfirmButton: false
+    }).then(() => {
+      router.push('/files');
+      setTimeout(() => {window.location.reload()}, 100)
+    })
+  } catch (error) {
+    Swal.fire({
+      icon: 'error',
+      title: 'Google Login Failed',
+      text: error.message || 'Failed to authenticate with Google. Please try again.',
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 </script>
@@ -71,52 +108,53 @@ const callback = async (response) => {
       src="https://images.pexels.com/photos/3587347/pexels-photo-3587347.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
   >
     <v-container class="signup-container">
-    <v-card class="signup-card">
-      <v-toolbar class="signup-toolbar" color="indigo-lighten-1" dark flat>
-        <v-card-title class="text-h6 font-weight-regular">
-          Sign up
-        </v-card-title>
-      </v-toolbar>
+      <v-card class="signup-card">
+        <v-toolbar class="signup-toolbar" color="indigo-lighten-1" dark flat>
+          <v-card-title class="text-h6 font-weight-regular">
+            Sign up
+          </v-card-title>
+        </v-toolbar>
 
-      <v-form ref="form" v-model="isValid" class="form-content">
-        <v-text-field
-            v-model="email"
-            :rules="[rules.email]"
-            color="deep-purple"
-            label="Email address"
-            type="email"
-            variant="filled"
-        />
-        <v-text-field
-            v-model="password"
-            :rules="[rules.password, rules.length(6)]"
-            color="deep-purple"
-            counter="6"
-            label="Password"
-            type="password"
-            variant="filled"
-        />
-      </v-form>
+        <v-form ref="form" v-model="isValid" class="form-content">
+          <v-text-field
+              v-model="email"
+              :rules="[rules.email]"
+              color="deep-purple"
+              label="Email address"
+              type="email"
+              variant="filled"
+          />
+          <v-text-field
+              v-model="password"
+              :rules="[rules.password, rules.length(6)]"
+              color="deep-purple"
+              counter="6"
+              label="Password"
+              type="password"
+              variant="filled"
+          />
+        </v-form>
 
-      <v-divider>or</v-divider>
+        <v-divider>or</v-divider>
 
-      <div class="google-login-container">
-        <GoogleLogin :callback="callback" />
-      </div>
+        <div class="google-login-container">
+          <GoogleLogin :callback="callback" />
+        </div>
 
-      <v-card-actions>
-        <v-btn variant="text" @click="goToRegister">Register</v-btn>
-        <v-spacer></v-spacer>
-        <v-btn
-            :loading="isLoading"
-            color="deep-purple-accent-4"
-            @click="submitForm"
-        >
-          Submit
-        </v-btn>
-      </v-card-actions>
-    </v-card>
-  </v-container>
+        <v-card-actions>
+          <v-btn variant="text" @click="goToRegister">Register</v-btn>
+          <v-spacer></v-spacer>
+          <v-btn
+              :loading="isLoading"
+              color="deep-purple-accent-4"
+              @click="submitForm"
+              :disabled="!isValid"
+          >
+            Submit
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-container>
   </v-parallax>
 </template>
 

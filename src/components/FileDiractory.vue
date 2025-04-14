@@ -501,8 +501,15 @@ const goToHelp = () => router.push('/help')
       </v-card-text>
 
       <v-card-actions>
-        <v-btn @click="cancelCreating">Скасувати</v-btn>
-        <v-btn @click="submitCreate" :disabled="!createDialogValid" color="primary">Створити</v-btn>
+        <div class="d-flex justify-space-between align-center w-100">
+          <v-btn @click="cancelCreating">
+            Скасувати
+          </v-btn>
+
+          <v-btn @click="submitCreate" :disabled="!createDialogValid" >
+            Створити
+          </v-btn>
+        </div>
       </v-card-actions>
     </v-card>
   </v-dialog>

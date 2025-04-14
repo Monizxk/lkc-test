@@ -56,7 +56,7 @@ const avatarSource = computed(() => {
 
 const logoutCallback = async () => {
   await Auth.logout();
-  await router.push("/menu")
+  await router.push("/")
   window.location.reload();
 }
 
