@@ -8,7 +8,7 @@ import Help from "@/components/Help.vue"
 import CanvasBoard from "@/components/CanvasBoard.vue";
 
 const routes = [
-    { path: '/menu', component: MainMenu },
+    { path: '/', component: MainMenu },
     { path: '/canva', component: Board },
     { path: '/signup', component: SignUp },
     { path: '/register', component: Register },

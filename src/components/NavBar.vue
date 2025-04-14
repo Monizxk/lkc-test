@@ -2,9 +2,57 @@
 import {useRouter} from "vue-router";
 import {onMounted, ref} from "vue";
 import {Auth, User} from "@/api/index.js";
+import { computed } from 'vue';
+
 
 const router = useRouter()
 const currentUser = ref(null);
+
+const colorList = ["deep-purple", "indigo", "teal", "pink", "cyan"];
+
+const avatarSource = computed(() => {
+  const user = currentUser.value;
+
+  if (!user) {
+    return {
+      isUrl: false,
+      value: "",
+      color: "primary"
+    };
+  }
+
+  const name = user.name || user.email || "";
+
+  const isGoogleAccount = user.avatar_url?.includes("googleusercontent.com");
+
+  if (isGoogleAccount && user.avatar_url) {
+    return {
+      isUrl: true,
+      value: user.avatar_url,
+      color: "primary"
+    };
+  }
+
+  let initials = "";
+  const nameParts = name.split(" ");
+
+  if (nameParts.length >= 2) {
+    initials = nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0);
+  } else {
+    initials = name.length > 1 ? name.substring(0, 2) : name.charAt(0);
+  }
+
+  const hash = [...name].reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const color = colorList[hash % colorList.length];
+
+  return {
+    isUrl: false,
+    value: initials.toUpperCase(),
+    color
+  };
+});
+
+
 
 const logoutCallback = async () => {
   await Auth.logout();
@@ -35,7 +83,7 @@ const goToRegister = () => router.push('/register')
       <div class="nav-content">
         <!-- Заголовок -->
         <v-card-title>
-          <router-link to="/menu" class="nav-link">LKC</router-link>
+          <router-link to="/" class="nav-link">LKC</router-link>
         </v-card-title>
 
 <!--        &lt;!&ndash; Посилання на сторінки &ndash;&gt;-->
@@ -64,7 +112,21 @@ const goToRegister = () => router.push('/register')
           <v-menu open-on-click>
             <template v-slot:activator="{ props }">
               <v-btn icon v-bind="props" size="small">
-                <v-avatar :image="currentUser.avatar_url" />
+                <v-avatar
+                    v-if="avatarSource.isUrl"
+                    :image="avatarSource.value"
+                    color="primary"
+                    size="40"
+                />
+                <v-avatar
+                    v-else
+                    :color="avatarSource.color"
+                    size="40"
+                    class="custom-avatar-text"
+                >
+                  {{ avatarSource.value }}
+                </v-avatar>
+
               </v-btn>
             </template>
 
@@ -128,7 +190,7 @@ const goToRegister = () => router.push('/register')
   color: black;
   text-decoration: none;
   pointer-events: auto;
-  margin-left: auto; /* сместит только этот блок вправо */
+  margin-left: auto
 }
 
 .nav-link {
@@ -157,5 +219,9 @@ const goToRegister = () => router.push('/register')
   background-color: transparent;
   box-shadow: none;
 }
+.custom-avatar-text {
+  font-size: 18px;
+  font-weight: 500;
+ }
 
 </style>
