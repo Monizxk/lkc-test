@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && git add dist -f && git commit -m \"Update build files\" && git subtree push --prefix dist origin gh-pages && git reset HEAD~1",
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
