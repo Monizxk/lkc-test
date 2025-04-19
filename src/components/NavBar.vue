@@ -72,9 +72,18 @@ onMounted(() => {
   fetchUser().then()
 })
 
-const goToHelp = () => router.push('/help')
-const goToSignUp = () => router.push('/signup')
-const goToRegister = () => router.push('/register')
+const goToHelp = async () => {
+  await router.push("/help")
+  window.location.reload();
+}
+const goToSignUp = async () => {
+  await router.push("/signup")
+  window.location.reload();
+}
+const goToRegister = async () => {
+  await router.push("/register")
+  window.location.reload();
+}
 </script>
 
 <template>
