@@ -15,7 +15,7 @@ const routes = [
     { path: '/files', component: FileDiractory },
     { path: '/help', component: Help },
     {
-        path: '/board/:boardId',
+        path: '/board/:boardID',
         name: 'board',
         component: CanvasBoard,
         props: true
