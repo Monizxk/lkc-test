@@ -2,6 +2,8 @@
 import {onBeforeUnmount, onMounted, onUnmounted, ref} from "vue";
 import Konva from "konva";
 import * as API from "../api";
+import { exportBoardToLKC } from '@/composables/useBoardFile'
+import { VTooltip, VBtn, VIcon } from 'vuetify/components'
 
 const props = defineProps({
   boardID: String
@@ -16,13 +18,19 @@ const noteSceneFunc = (context, shape) => {
 // /========================================= STAGE =========================================\
 
 class Stage {
-  constructor() {
+  constructor(projectId = null, api = null, saveIntervalMs = 30000) {
     this.stage = null;
     this.stageContainerRef = null;
     this.transformer = null;
     this.history = [];
     this.historyIndex = -1;
     this.stageContainerResizeObserver = null;
+    this.autoSaveInterval = null;
+    this.lastSavedData = null;
+    this.isSaving = false;
+    this.saveIntervalMs = saveIntervalMs; 
+    this.projectId = projectId; 
+    this.api = api; 
 
     this.onResize = () => {
       if (!this.stageContainerRef || !this.stageContainerRef.value) return;
@@ -62,6 +70,10 @@ class Stage {
       this.onResize();
     
       this.saveSnapshot();
+
+      if (this.api && this.projectId) {
+        this.startAutoSave();
+      }
     }
 
     this.destroy = () => {
@@ -73,6 +85,7 @@ class Stage {
         this.stage.off("mousedown");
         this.stage.off("mouseup");
       }
+      this.stopAutoSave();
     }
 
     this.getTopLayer = () => {
@@ -191,10 +204,73 @@ class Stage {
       this.history.push(serialized);
       this.historyIndex += 1;
     }
+
+    this.startAutoSave = () => {
+      if (this.autoSaveInterval) {
+        this.stopAutoSave(); 
+      }
+
+      this.autoSaveInterval = setInterval(() => {
+        this.autoSave(); 
+      }, this.saveIntervalMs);
+      console.log(`Auto-save started (every ${this.saveIntervalMs / 1000} seconds)`);
+    }
+
+    this.stopAutoSave = () => {
+      if (this.autoSaveInterval) {
+        clearInterval(this.autoSaveInterval);  
+        this.autoSaveInterval = null;
+        console.log('Auto-save stopped'); 
+      }
+    }
+
+    this.autoSave = async () => {
+      if (this.isSaving || !this.history.length || this.historyIndex < 0 || !this.api) {
+        return;
+      }
+
+      const currentData = this.history[this.historyIndex];
+
+      if (this.lastSavedData === currentData) {
+        return;
+      }
+
+      const contentSize = JSON.stringify(currentData).length;
+      console.log(`Content size: ${contentSize} bytes`);
+
+      try {
+        this.isSaving = true;
+        this.triggerSavingIndicator(true);
+
+        const contentToSend = typeof currentData === 'string'
+          ? JSON.parse(currentData)
+          : currentData;
+
+        await this.api.update({
+          id: this.projectId,
+          content: contentToSend
+    });
+
+        this.lastSavedData = currentData;
+        console.log('Save successful');
+      } catch (error) {
+        console.error('Save error:', error);
+      } finally {
+        this.isSaving = false;
+        this.triggerSavingIndicator(false);
+      }
+    }
+
+    this.triggerSavingIndicator = (isShowing) => {
+      const indicator = document.getElementById('saving-indicator');
+      if (indicator) {
+        indicator.style.display = isShowing ? 'block' : 'none';
+      }
+    }
   }
 }
 
-const stage = new Stage()
+const stage = new Stage(props.boardID, API.Project);
 const stageRef = ref(null);
 const stageContainerRef = ref(null);
 
@@ -203,12 +279,26 @@ onMounted(() => {
   API.Project.get({id: props.boardID}).then((response) => {
     if (response.content !== null) {
       stage.deserialize(response.content)
+      stage.lastSavedData = response.content; 
+      stage.saveSnapshot(); 
     }
   })
 })
 
-onUnmounted(stage.destroy)
+onUnmounted(() => {
+  stage.destroy();
+})
 
+const exportCurrentBoard = () => {
+  exportBoardToLKC(stage); 
+}
+
+const handleFileUpload = (event) => {
+  const file = event.target.files[0];
+  if (file) {
+    importBoardFromLKC(file, stage);
+  }
+}
 // \========================================= STAGE =========================================/
 
 
@@ -547,7 +637,14 @@ class Save extends Action {
     super(stage, toolbar)
 
     this.onSelect = () => {
-      localStorage.setItem("stage", this.stage.serialize())
+      return exportBoardToLKC(this.stage);
+    }
+
+    this.manualSave = async () => {
+      if (this.stage.autoSave) {
+        await this.stage.autoSave();
+      }
+      return exportBoardToLKC(this.stage);
     }
   }
 }
@@ -557,8 +654,45 @@ class Load extends Action {
     super(stage, toolbar)
 
     this.onSelect = () => {
-      const bruh = localStorage.getItem("stage");
-      this.stage.deserialize(bruh)
+      const fileInput = document.createElement('input');
+      fileInput.type = 'file';
+      fileInput.accept = '.lkc';
+      fileInput.style.display = 'none';
+      
+      document.body.appendChild(fileInput);
+      
+      fileInput.addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            try {
+              const data = JSON.parse(reader.result);
+              if (data.snapshot) {
+                this.stage.deserialize(data.snapshot);
+              } else {
+                console.error('File does not contain snapshot data');
+              }
+            } catch (error) {
+              console.error('Failed to parse .lkc file:', error);
+            }
+          };
+          reader.readAsText(file);
+        }
+        
+        document.body.removeChild(fileInput);
+      });
+      
+      fileInput.click();
+    }
+    
+    this.loadFromLocalStorage = () => {
+      const savedData = localStorage.getItem("stage");
+      if (savedData) {
+        this.stage.deserialize(savedData);
+        return true;
+      }
+      return false;
     }
   }
 }
@@ -660,14 +794,23 @@ onBeforeUnmount(toolbar.destroy)
     <!-- /========================================= TOOLBAR =========================================\ -->
     <div class="toolbar">
       <v-btn
-          v-for="(tool, index) in toolbar.tools.value"
-          :key="index"
-          :icon="tool.icon"
-          :variant="toolbar.selectedTool.value === index ? 'tonal' : 'elevated'"
-          :disabled="Object.getPrototypeOf(tool.handler).constructor === Tool"
-          size="small"
-          @click="() => { toolbar.selectTool(index) }"
-      />
+        v-for="(tool, index) in toolbar.tools.value" 
+        :key="index"
+        :icon="tool.icon"
+        :variant="toolbar.selectedTool.value === index ? 'tonal' : 'elevated'"
+        :disabled="Object.getPrototypeOf(tool.handler).constructor === Tool"
+        size="small"
+        @click="() => { toolbar.selectTool(index) }"
+      >
+        <v-tooltip
+          :text="tool.name"
+          location="bottom"
+        >
+          <template v-slot:activator="{ props }">
+            <v-icon v-bind="props">{{ tool.icon }}</v-icon>
+          </template>
+        </v-tooltip>
+      </v-btn>
     </div>
     <!-- \========================================= TOOLBAR =========================================/ -->
 
@@ -744,6 +887,7 @@ onBeforeUnmount(toolbar.destroy)
   background-color: #eaeaea;
   border-color: #bfbfbf;
 }
+
 
 .toolbar {
   gap: 0.5rem;
