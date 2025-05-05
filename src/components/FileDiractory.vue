@@ -82,14 +82,14 @@ const isFormValid = computed(() => {
       editedDescription.value.length <= 240;
 });
 
-const availableIcons = [
-  { text: "Папка", value: "mdi-folder" },
-  { text: "Документ", value: "mdi-file-document" },
-  { text: "Зображення", value: "mdi-image" },
-  { text: "Відео", value: "mdi-video" },
-  { text: "Музика", value: "mdi-music" },
-  { text: "Завантаження", value: "mdi-download" }
-];
+// const availableIcons = [
+//   { text: "Папка", value: "mdi-folder" },
+//   { text: "Документ", value: "mdi-file-document" },
+//   { text: "Зображення", value: "mdi-image" },
+//   { text: "Відео", value: "mdi-video" },
+//   { text: "Музика", value: "mdi-music" },
+//   { text: "Завантаження", value: "mdi-download" }
+// ];
 
 // ==================================================================
 
@@ -280,23 +280,20 @@ const menuItems = ref([
 ]);
 
 const handleMenuItem = (item) => {
-  const authStore = useAuthStore();  // Get the store instance
-  const router = useRouter();  // Get Vue Router instance
+  const authStore = useAuthStore(); 
+  const router = useRouter();  
 
   switch (item.action) {
     case 'settings':
       console.log('Opening account settings');
       break;
     case 'logout':
-      // Clear session data
       localStorage.removeItem('authToken');
       sessionStorage.removeItem('userData');
 
-      // Call the logout action from Pinia store
       authStore.logout();
 
-      // After calling the logout action, handle the routing
-      router.push('/login');  // Now Vue Router handles the redirection
+      router.push('/login');
 
       console.log('Logging out');
       break;
@@ -317,7 +314,6 @@ const goToHelp = () => router.push('/help')
           LKC
         </v-card-title>
         <div>
-          <!-- Кнопка довідки -->
           <v-btn
               class="hover-visible"
               @click="goToHelp"
@@ -325,7 +321,6 @@ const goToHelp = () => router.push('/help')
               size=""
           ></v-btn>
 
-          <!-- Avatar button with dropdown menu -->
           <v-menu open-on-click>
             <template v-slot:activator="{ props }">
               <v-btn
@@ -457,7 +452,6 @@ const goToHelp = () => router.push('/help')
     </v-row>
   </v-container>
 
-  <!-- Create Dialog -->
   <v-dialog v-model="showCreateDialog" max-width="500px">
     <v-card>
       <v-card-title>Створити проєкт</v-card-title>
@@ -514,7 +508,6 @@ const goToHelp = () => router.push('/help')
     </v-card>
   </v-dialog>
 
-  <!-- Edit Dialog -->
   <v-dialog v-model="showEditDialog" max-width="500px" @update:model-value="cancelEditing()">
     <v-card>
       <v-card-title>Редагувати проєкт</v-card-title>

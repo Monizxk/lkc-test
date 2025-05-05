@@ -19,7 +19,6 @@ const googleUser = ref(null)
 
 const handleCredentialResponse = (response) => {
   console.log("Google JWT Token: ", response.credential)
-  // Decode and use the credential, e.g., send it to your backend
   googleUser.value = response.credential
 }
 
@@ -30,7 +29,7 @@ onMounted(() => {
   })
   window.google.accounts.id.renderButton(
       document.getElementById("google-signin-btn"),
-      { theme: "outline", size: "large" } //style
+      { theme: "outline", size: "large" } 
   )
 })
 

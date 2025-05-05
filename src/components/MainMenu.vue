@@ -63,18 +63,14 @@
 
 
   <v-container class="features-section py-16">
-    <!-- Main Heading -->
     <h2 class="text-h3 text-center font-weight-bold mb-16" style="color: #2d3436">
       Collect everything in one place
     </h2>
 
-    <!-- Feature Cards Grid -->
     <v-row class="features-grid">
       <v-col cols="12" md="6" lg="3" v-for="(feature, index) in features" :key="index">
-        <!-- Feature Visual -->
         <div class="feature-visual mb-8">
           <v-card flat class="feature-preview" v-if="index === 0">
-            <!-- Notes Preview -->
             <div class="">
               <v-img
                   src="https://cdn.vuetifyjs.com/images/cards/sunshine.jpg"
@@ -84,7 +80,6 @@
             </div>
           </v-card>
           <v-card flat class="feature-preview" v-else-if="index === 1">
-            <!-- Upload Preview -->
             <v-img
                 src="https://cdn.vuetifyjs.com/images/cards/sunshine.jpg"
                 height="200"
@@ -97,7 +92,6 @@
 <!--            </div>-->
           </v-card>
           <v-card flat class="feature-preview" v-else-if="index === 2">
-            <!-- Web Clipper Preview -->
             <v-img
                 src="https://cdn.vuetifyjs.com/images/cards/sunshine.jpg"
                 height="200"
@@ -105,7 +99,6 @@
             ></v-img>
           </v-card>
           <v-card flat class="feature-preview" v-else>
-            <!-- Mobile Preview -->
             <v-img
                 src="https://cdn.vuetifyjs.com/images/cards/sunshine.jpg"
                 height="200"
@@ -114,7 +107,6 @@
           </v-card>
         </div>
 
-        <!-- Feature Text -->
         <h3 class="text-h5 font-weight-bold mb-3">{{ feature.title }}</h3>
         <p class="text-body-1 text-grey-darken-1">
           {{ feature.description }}
@@ -125,12 +117,10 @@
   </v-container>
 
   <v-container class="category-section py-16">
-    <!-- Заголовок секции -->
     <div class="text-center mb-4">
       <span class="text-white">LKC is used by:</span>
     </div>
 
-    <!-- Карусель с категориями -->
     <v-carousel
         v-model="activeSlide"
         hide-delimiters
@@ -143,7 +133,6 @@
           v-for="category in categories"
           :key="category.id"
       >
-        <!-- Текст категории -->
         <v-container class="category-text text-center mb-4">
           <h2 class="text-h3 text-white font-weight-medium">
             {{ category.title }}
@@ -168,7 +157,6 @@
           </div>
         </v-container>
 
-        <!-- Изображение категории -->
         <v-card
             class="mx-auto overflow-hidden"
             max-width="900"

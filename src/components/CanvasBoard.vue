@@ -563,7 +563,7 @@ class Note extends Tool {
         width: 200,
         height: 300,
         fontSize: 20,
-        text: "Note!!!🤯🤯🤯",
+        text: "Text",
         padding: 10,
         _type: "Note",
         _bgColor: "#fff8b8",

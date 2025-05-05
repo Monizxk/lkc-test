@@ -1,6 +1,3 @@
-// Функции с IndexedDB
-
-
 export const toStringKey = (key) => {
     if (key === null || key === undefined) {
         return '';
@@ -12,7 +9,7 @@ export const initDB = (dbName, storeName, version = 1) => {
     return new Promise((resolve, reject) => {
         const request = indexedDB.open(dbName, version);
         request.onerror = (event) => {
-            reject(`Ошибка открытия базы данных: ${event.target.error}`);
+            reject(`Error open db: ${event.target.error}`);
         };
         request.onsuccess = (event) => {
             const db = event.target.result;
@@ -20,7 +17,6 @@ export const initDB = (dbName, storeName, version = 1) => {
         };
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
-            // Создаем хранилище объектов, если его еще нет
             if (!db.objectStoreNames.contains(storeName)) {
                 db.createObjectStore(storeName, { keyPath: 'id' });
             }
@@ -46,7 +42,7 @@ export const insertData = async (dbName, storeName, key, value) => {
             };
 
             request.onerror = (event) => {
-                reject(`Ошибка при вставке данных: ${event.target.error}`);
+                reject(`Error insert data: ${event.target.error}`);
             };
 
             transaction.oncomplete = () => {
@@ -54,7 +50,7 @@ export const insertData = async (dbName, storeName, key, value) => {
             };
         });
     } catch (error) {
-        console.error('Ошибка в insertData:', error);
+        console.error('Error in insertData:', error);
         throw error;
     }
 };
@@ -76,7 +72,7 @@ export const getDataByKey = async (dbName, storeName, key) => {
             };
 
             request.onerror = (event) => {
-                reject(`Ошибка при получении данных: ${event.target.error}`);
+                reject(`Error get data: ${event.target.error}`);
             };
 
             transaction.oncomplete = () => {
@@ -84,7 +80,7 @@ export const getDataByKey = async (dbName, storeName, key) => {
             };
         });
     } catch (error) {
-        console.error('Ошибка в getDataByKey:', error);
+        console.error('Error in getDataByKey:', error);
         throw error;
     }
 };
@@ -105,7 +101,7 @@ export const getAllData = async (dbName, storeName) => {
             };
 
             request.onerror = (event) => {
-                reject(`Ошибка при получении всех данных: ${event.target.error}`);
+                reject(`Error get data: ${event.target.error}`);
             };
 
             transaction.oncomplete = () => {
@@ -113,7 +109,7 @@ export const getAllData = async (dbName, storeName) => {
             };
         });
     } catch (error) {
-        console.error('Ошибка в getAllData:', error);
+        console.error('Error in getAllData:', error);
         throw error;
     }
 };
@@ -134,7 +130,7 @@ export const deleteDataByKey = async (dbName, storeName, key) => {
             };
 
             request.onerror = (event) => {
-                reject(`Ошибка при удалении данных: ${event.target.error}`);
+                reject(`Error delete data: ${event.target.error}`);
             };
 
             transaction.oncomplete = () => {
@@ -142,7 +138,7 @@ export const deleteDataByKey = async (dbName, storeName, key) => {
             };
         });
     } catch (error) {
-        console.error('Ошибка в deleteDataByKey:', error);
+        console.error('Error in deleteDataByKey:', error);
         throw error;
     }
 };

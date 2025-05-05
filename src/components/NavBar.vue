@@ -90,7 +90,6 @@ const goToRegister = async () => {
   <v-card>
     <v-card-item class="nav-bar">
       <div class="nav-content">
-        <!-- Заголовок -->
         <v-card-title>
           <router-link to="/" class="nav-link">LKC</router-link>
         </v-card-title>
@@ -106,7 +105,6 @@ const goToRegister = async () => {
         </div>
 
 
-        <!-- Інформація про користувача -->
         <div v-if="currentUser" class="user-info">
 <!--          <p>{{ currentUser.name }}</p>-->
 

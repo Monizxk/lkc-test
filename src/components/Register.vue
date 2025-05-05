@@ -20,7 +20,6 @@ const googleUser = ref(null)
 
 const handleCredentialResponse = (response) => {
   console.log("Google JWT Token: ", response.credential)
-  // Decode and use the credential, e.g., send it to your backend
   googleUser.value = response.credential
 }
 
@@ -31,7 +30,7 @@ onMounted(() => {
   })
   window.google.accounts.id.renderButton(
       document.getElementById("google-signin-btn"),
-      { theme: "outline", size: "large" } //style
+      { theme: "outline", size: "large" } 
   )
 })
 
@@ -51,25 +50,21 @@ const registerChain = async () => {
   try {
     isLoading.value = true
 
-    // First register the user
     await Auth.register({
       name: name.value,
       email: email.value,
       password: password.value
     })
 
-    // Then login with the same credentials
     await Auth.login({
       email: email.value,
       password: password.value
     })
 
-    // Get user info
     await User.me().then(user => {
       console.log(user)
     })
 
-    // Show success message
     await Swal.fire({
       icon: 'success',
       title: 'Registration Successful!',
@@ -78,7 +73,6 @@ const registerChain = async () => {
       showConfirmButton: false
     })
 
-    // Redirect to files page
     await router.push('/files')
     setTimeout(() => {window.location.reload()}, 100)
 
