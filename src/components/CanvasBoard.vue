@@ -4,9 +4,12 @@ import Konva from "konva";
 import * as API from "../api";
 import { exportBoardToLKC } from '@/composables/useBoardFile'
 import { VTooltip, VBtn, VIcon } from 'vuetify/components'
+import { instance } from "@/api/base.js";
+import ChatAi from '@/components/ChatAI.vue';
 
 const props = defineProps({
-  boardID: String
+  boardID: String,
+  getContextMethod:  Function,
 })
 
 const noteSceneFunc = (context, shape) => {
@@ -788,7 +791,7 @@ onBeforeUnmount(toolbar.destroy)
   </div>
   <!-- \========================================= SIDE MENU =========================================/ -->
 
-
+<ChatAi></ChatAi>
 
   <div class="main-container">
     <!-- /========================================= TOOLBAR =========================================\ -->
@@ -813,8 +816,6 @@ onBeforeUnmount(toolbar.destroy)
       </v-btn>
     </div>
     <!-- \========================================= TOOLBAR =========================================/ -->
-
-
 
     <!-- /========================================= STAGE =========================================\ -->
     <div ref="stageContainerRef" id="stageContainer" class="stage">
